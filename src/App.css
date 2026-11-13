@@ -779,6 +779,583 @@
 	height: 100%;
 }
 
+/* ===== About -> My Role center tear ===== */
+.about-slider {
+	isolation: isolate;
+	perspective: 1200px;
+}
+
+.about-slider__track {
+	position: relative;
+	z-index: 2;
+}
+
+.myrole-layer {
+	position: absolute;
+	inset: 0;
+	z-index: 3;
+	overflow: hidden;
+	background: #080a12;
+	will-change: opacity;
+}
+
+.about-tear {
+	position: absolute;
+	inset: 0;
+	z-index: 4;
+	overflow: visible;
+	pointer-events: none;
+	transform-style: preserve-3d;
+	will-change: opacity;
+}
+
+.about-tear__half {
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: 100%;
+	overflow: hidden;
+	will-change: transform, clip-path;
+	backface-visibility: hidden;
+	transform-style: preserve-3d;
+	transform: translate3d(0, var(--tear-y, 0%), 0) rotateX(var(--tear-rotate, 0deg)) skewX(var(--tear-skew, 0deg));
+}
+
+.about-tear__half > .aboutme {
+	position: absolute;
+	inset: 0;
+	height: 100%;
+}
+
+.about-tear__half > .aboutme::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 3;
+	pointer-events: none;
+	opacity: 0.34;
+	mix-blend-mode: screen;
+	background:
+		radial-gradient(circle at 12% 36%, rgba(255, 244, 202, 0.34) 0 0.7px, transparent 1.4px),
+		radial-gradient(circle at 74% 68%, rgba(255, 255, 255, 0.22) 0 0.8px, transparent 1.6px),
+		repeating-linear-gradient(103deg, transparent 0 6px, rgba(255, 235, 192, 0.08) 6px 7px, transparent 7px 14px);
+	background-size: 17px 19px, 23px 21px, auto;
+	filter: contrast(1.3);
+}
+
+.about-tear__half--top {
+	transform-origin: 50% 100%;
+	filter: drop-shadow(0 -18px 20px rgba(0, 0, 0, 0.4));
+}
+
+.about-tear__half--bottom {
+	transform-origin: 50% 0%;
+	filter: drop-shadow(0 18px 20px rgba(0, 0, 0, 0.5));
+}
+
+/* Uneven fiber edges make the split read as ripped paper rather than a clean mask. */
+.about-tear__half::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: clamp(0.45rem, 1.1vw, 1rem);
+	z-index: 5;
+	background:
+		repeating-linear-gradient(92deg, rgba(255, 249, 218, 0.9) 0 2px, rgba(125, 42, 34, 0.5) 2px 5px, transparent 5px 11px),
+		linear-gradient(180deg, rgba(255, 247, 210, 0.65), rgba(96, 25, 27, 0.58));
+	filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.65));
+	clip-path: polygon(0 38%, 3% 66%, 7% 42%, 11% 72%, 16% 34%, 21% 63%, 26% 41%, 31% 70%, 36% 36%, 42% 64%, 47% 40%, 53% 72%, 58% 35%, 63% 64%, 69% 42%, 74% 70%, 80% 36%, 85% 63%, 91% 40%, 96% 67%, 100% 36%, 100% 100%, 0 100%);
+}
+
+.about-tear__half::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: clamp(0.8rem, 1.8vw, 1.5rem);
+	z-index: 6;
+	pointer-events: none;
+	background:
+		repeating-linear-gradient(96deg, transparent 0 7px, rgba(255, 255, 255, 0.7) 7px 8px, transparent 8px 17px),
+		linear-gradient(180deg, transparent 0%, rgba(20, 7, 12, 0.42) 55%, transparent 100%);
+	filter: blur(0.35px) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.75));
+	mix-blend-mode: screen;
+	clip-path: polygon(0 55%, 4% 30%, 9% 62%, 14% 24%, 20% 58%, 25% 35%, 31% 68%, 37% 28%, 43% 61%, 49% 31%, 55% 65%, 61% 25%, 68% 56%, 75% 32%, 82% 64%, 88% 27%, 94% 57%, 100% 34%, 100% 76%, 94% 62%, 88% 82%, 82% 65%, 75% 84%, 68% 63%, 61% 86%, 55% 66%, 49% 84%, 43% 62%, 37% 82%, 31% 67%, 25% 86%, 20% 65%, 14% 82%, 9% 66%, 4% 88%, 0 72%);
+}
+
+.about-tear__half--top::after {
+	bottom: -0.1rem;
+}
+
+.about-tear__half--top::before {
+	bottom: -0.2rem;
+}
+
+.about-tear__half--bottom::after {
+	top: -0.1rem;
+	transform: scaleY(-1);
+}
+
+.about-tear__half--bottom::before {
+	top: -0.2rem;
+	transform: scaleY(-1);
+}
+
+.about-tear__seam {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 50%;
+	height: clamp(0.9rem, 2.5vw, 2.2rem);
+	transform: translateY(-50%) rotate(-0.35deg);
+	background:
+		repeating-linear-gradient(90deg, transparent 0 13px, rgba(255, 246, 190, 0.7) 13px 15px, transparent 15px 28px),
+		linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.8) 48%, transparent);
+	clip-path: polygon(0 42%, 4% 52%, 8% 38%, 13% 58%, 19% 44%, 25% 63%, 31% 41%, 38% 56%, 45% 39%, 52% 61%, 58% 43%, 65% 58%, 72% 37%, 79% 54%, 86% 41%, 93% 58%, 100% 43%, 100% 62%, 93% 72%, 86% 58%, 79% 76%, 72% 60%, 65% 77%, 58% 59%, 52% 78%, 45% 56%, 38% 74%, 31% 57%, 25% 79%, 19% 59%, 13% 76%, 8% 55%, 4% 70%, 0 58%);
+	filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.6));
+}
+
+/* ===== About -> My Role crumple transition ===== */
+.about-crumple__filters {
+	position: absolute;
+	width: 0;
+	height: 0;
+	overflow: hidden;
+}
+
+.about-crumple {
+	position: absolute;
+	inset: 0;
+	z-index: 4;
+	overflow: visible;
+	pointer-events: none;
+	perspective: 1200px;
+	transform-style: preserve-3d;
+}
+
+.about-crumple__sheet {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	transform-origin: 0% 100%;
+	transform: translate3d(var(--crumple-x, 0%), var(--crumple-y, 0%), 0) scale(var(--crumple-scale, 1)) rotate(var(--crumple-rotate, 0deg)) skewX(var(--crumple-skew, 0deg));
+	border-radius: var(--crumple-radius, 0%);
+	filter: url(#about-crumple-displacement) blur(var(--crumple-blur, 0px)) drop-shadow(0 24px 28px rgba(0, 0, 0, 0.52));
+	transform-style: preserve-3d;
+	will-change: transform, filter, border-radius;
+}
+
+.about-crumple__sheet > .aboutme {
+	position: absolute;
+	inset: 0;
+	height: 100%;
+	box-shadow: inset 0 0 0 1px rgba(255, 244, 210, 0.14), inset 0 0 3rem rgba(0, 0, 0, 0.3);
+}
+
+/* Dense crossing folds and soft highlights sell the compression into a ball. */
+.about-crumple__sheet::before {
+	content: "";
+	position: absolute;
+	inset: -8%;
+	z-index: 8;
+	pointer-events: none;
+	background:
+		repeating-linear-gradient(-38deg, transparent 0 18px, rgba(0, 0, 0, 0.25) 19px 22px, transparent 25px 42px),
+		repeating-linear-gradient(52deg, transparent 0 24px, rgba(255, 240, 190, 0.16) 25px 28px, transparent 32px 54px),
+		radial-gradient(ellipse at 30% 32%, transparent 0 18%, rgba(0, 0, 0, 0.42) 20%, transparent 31%),
+		radial-gradient(ellipse at 72% 65%, transparent 0 16%, rgba(255, 245, 204, 0.2) 18%, transparent 29%);
+	mix-blend-mode: soft-light;
+	opacity: 0.8;
+	transform: translate(5%, -4%) rotate(-18deg) scale(1.08);
+	filter: blur(0.7px);
+}
+
+.about-crumple__sheet::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 9;
+	pointer-events: none;
+	background:
+		radial-gradient(ellipse at 28% 72%, rgba(255, 255, 230, 0.25), transparent 20%),
+		radial-gradient(ellipse at 34% 58%, rgba(0, 0, 0, 0.5), transparent 26%),
+		radial-gradient(ellipse at 72% 24%, rgba(0, 0, 0, 0.38), transparent 23%),
+		repeating-radial-gradient(circle at 50% 50%, transparent 0 9px, rgba(255, 245, 215, 0.08) 10px 12px, transparent 13px 21px);
+	mix-blend-mode: overlay;
+	opacity: 0.76;
+	filter: blur(1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.about-crumple__sheet {
+		filter: none;
+	}
+}
+
+/* ===== About -> paper airplane -> My Role transition ===== */
+.about-airplane {
+	position: absolute;
+	inset: 0;
+	z-index: 4;
+	overflow: visible;
+	pointer-events: none;
+	perspective: 1200px;
+	transform-style: preserve-3d;
+}
+
+.about-airplane__sheet {
+	position: absolute;
+	inset: 0;
+	overflow: visible;
+	transform-origin: 0% 100%;
+	transform: translate3d(var(--plane-x, 0%), var(--plane-y, 0%), 0) scale(var(--plane-scale, 1)) rotateY(var(--plane-yaw, 0deg)) rotate(var(--plane-rotate, 0deg)) skewX(var(--plane-skew, 0deg));
+	background: linear-gradient(145deg, rgba(255, 255, 255, 0.14), transparent 28%, rgba(0, 0, 0, 0.22) 75%);
+	filter: drop-shadow(18px 24px 18px rgba(0, 0, 0, 0.58));
+	transform-style: preserve-3d;
+	will-change: transform, clip-path;
+}
+
+.about-airplane__sheet > .aboutme {
+	position: absolute;
+	inset: 0;
+	height: 100%;
+	box-shadow: inset 0 0 0 1px rgba(255, 249, 220, 0.18), inset 0 -2rem 4rem rgba(0, 0, 0, 0.22);
+}
+
+.about-airplane__core {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	transform-style: preserve-3d;
+	backface-visibility: hidden;
+}
+
+.about-airplane__core > .aboutme {
+	position: absolute;
+	inset: 0;
+	height: 100%;
+}
+
+.about-airplane__wing,
+.about-airplane__nose {
+	position: absolute;
+	z-index: 12;
+	pointer-events: none;
+	transform-style: preserve-3d;
+	backface-visibility: hidden;
+}
+
+.about-airplane__wing {
+	left: 0;
+	width: 82%;
+	height: 52%;
+	background: linear-gradient(145deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.06) 35%, rgba(26, 3, 11, 0.62) 100%), linear-gradient(90deg, #8d1728, #3b0710 74%, #160207);
+	box-shadow: 0 18px 28px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 252, 224, 0.52);
+	transform: perspective(1000px) rotateX(var(--wing-rotate, 0deg)) rotateY(var(--wing-tilt, 0deg));
+	will-change: transform;
+}
+
+.about-airplane__wing::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(145deg, transparent 43%, rgba(255, 249, 213, 0.65) 44% 45%, transparent 46%), repeating-linear-gradient(135deg, transparent 0 18px, rgba(255, 255, 255, 0.08) 19px 20px, transparent 21px 38px);
+	mix-blend-mode: screen;
+	opacity: 0.8;
+}
+
+.about-airplane__wing--top {
+	top: 0;
+	transform-origin: 50% 100%;
+	clip-path: polygon(0 100%, 100% 0, 100% 100%);
+}
+
+.about-airplane__wing--bottom {
+	bottom: 0;
+	transform-origin: 50% 0%;
+	clip-path: polygon(0 0, 100% 0, 100% 100%);
+	background: linear-gradient(35deg, rgba(12, 1, 5, 0.76), rgba(255, 255, 255, 0.12) 55%, rgba(89, 12, 25, 0.8)), linear-gradient(90deg, #5b0b18, #20030a);
+}
+
+.about-airplane__nose {
+	right: -1%;
+	top: 42%;
+	width: 31%;
+	height: 16%;
+	background: linear-gradient(145deg, #f6d89a 0%, #cc6d59 18%, #5d0b18 62%, #120106 100%);
+	clip-path: polygon(0 0, 100% 50%, 0 100%, 22% 50%);
+	filter: drop-shadow(12px 10px 10px rgba(0, 0, 0, 0.52));
+	transform-origin: 0% 50%;
+	transform: perspective(1000px) rotateY(var(--nose-rotate, 0deg));
+}
+
+/* The long diagonal highlight is the upper wing; the dark fold is the lower wing. */
+.about-airplane__sheet::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 8;
+	pointer-events: none;
+	background:
+		linear-gradient(155deg, transparent 0 43%, rgba(255, 251, 220, 0.42) 44% 45%, rgba(255, 255, 255, 0.06) 46% 49%, transparent 50%),
+		linear-gradient(25deg, transparent 0 48%, rgba(24, 3, 10, 0.48) 49% 50%, rgba(255, 220, 170, 0.18) 51% 52%, transparent 53%),
+		linear-gradient(135deg, transparent 0 64%, rgba(0, 0, 0, 0.3) 65% 66%, transparent 67%);
+	mix-blend-mode: screen;
+	opacity: 0.9;
+}
+
+.about-airplane__sheet::after {
+	content: "";
+	position: absolute;
+	left: 31%;
+	top: 0;
+	width: 2px;
+	height: 100%;
+	z-index: 9;
+	background: linear-gradient(180deg, transparent, rgba(255, 252, 220, 0.75) 45%, rgba(19, 3, 9, 0.7) 52%, transparent);
+	box-shadow: 0 0 12px rgba(255, 241, 194, 0.32);
+	transform: rotate(18deg);
+	transform-origin: 50% 50%;
+	opacity: 0.72;
+}
+
+/* ===== About surrounding crumple, then right-to-left book page ===== */
+.about-surround-crumple {
+	position: absolute;
+	inset: 0;
+	z-index: 4;
+	pointer-events: none;
+	perspective: 1100px;
+	transform-style: preserve-3d;
+	/* Keep the center content untouched: this layer is only a soft outer frame. */
+	-webkit-mask-image: radial-gradient(ellipse 43% 42% at 50% 50%, transparent 0 46%, #000 69%);
+	mask-image: radial-gradient(ellipse 43% 42% at 50% 50%, transparent 0 46%, #000 69%);
+}
+
+.about-surround-crumple__frame {
+	position: absolute;
+	inset: -8%;
+	transform: translate3d(var(--surround-x, 0%), var(--surround-y, 0%), 0) scale(var(--surround-scale, 1)) rotate(var(--surround-rotate, 0deg));
+	background:
+		radial-gradient(ellipse at 4% 8%, rgba(255, 245, 191, 0.58) 0 5%, rgba(255, 245, 191, 0.12) 14%, transparent 29%),
+		radial-gradient(ellipse at 1% 52%, rgba(9, 1, 8, 0.78) 0 8%, rgba(9, 1, 8, 0.2) 22%, transparent 40%),
+		radial-gradient(ellipse at 9% 96%, rgba(255, 220, 152, 0.48) 0 6%, rgba(255, 220, 152, 0.08) 18%, transparent 34%),
+		radial-gradient(ellipse at 96% 12%, rgba(8, 1, 7, 0.72) 0 9%, rgba(8, 1, 7, 0.2) 23%, transparent 40%),
+		radial-gradient(ellipse at 100% 58%, rgba(255, 246, 202, 0.48) 0 6%, rgba(255, 246, 202, 0.1) 19%, transparent 35%),
+		radial-gradient(ellipse at 89% 98%, rgba(9, 1, 6, 0.78) 0 8%, rgba(9, 1, 6, 0.18) 22%, transparent 38%),
+		repeating-linear-gradient(-34deg, transparent 0 18px, rgba(0, 0, 0, 0.34) 19px 25px, transparent 27px 48px),
+		repeating-linear-gradient(52deg, transparent 0 22px, rgba(255, 236, 178, 0.23) 24px 30px, transparent 32px 56px);
+	mix-blend-mode: normal;
+	opacity: 0.94;
+	filter: contrast(1.3) saturate(0.92) blur(1.2px) drop-shadow(0 16px 20px rgba(0, 0, 0, 0.55));
+	transform-style: preserve-3d;
+	will-change: transform;
+}
+
+.about-surround-crumple__frame::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background:
+		conic-gradient(from 28deg at 18% 15%, transparent 0 19%, rgba(255, 243, 183, 0.28) 22%, transparent 27% 47%, rgba(0, 0, 0, 0.35) 51%, transparent 56% 100%),
+		conic-gradient(from 208deg at 82% 78%, transparent 0 23%, rgba(255, 245, 203, 0.22) 27%, transparent 33% 59%, rgba(0, 0, 0, 0.4) 64%, transparent 69% 100%);
+	filter: blur(4px);
+	mix-blend-mode: overlay;
+	opacity: 0.9;
+	transform: rotate(-4deg) skewX(-5deg) scale(1.04);
+}
+
+.about-page-turn {
+	position: absolute;
+	inset: 0;
+	z-index: 5;
+	perspective: 1500px;
+	pointer-events: none;
+	transform-style: preserve-3d;
+}
+
+.about-page-turn__sheet {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	transform-origin: 0% 50%;
+	transform: perspective(1500px) rotateY(var(--page-rotate-y, 0deg)) rotateZ(var(--page-rotate-z, 0deg));
+	transform-style: preserve-3d;
+	backface-visibility: hidden;
+	background: linear-gradient(90deg, rgba(255, 247, 210, 0.18), transparent 8%, transparent 88%, rgba(0, 0, 0, 0.35));
+	box-shadow: 18px 0 34px rgba(0, 0, 0, 0.4);
+	will-change: transform;
+}
+
+.about-page-turn__sheet > .aboutme {
+	position: absolute;
+	inset: 0;
+	height: 100%;
+	backface-visibility: hidden;
+}
+
+.about-page-turn__sheet::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	width: clamp(0.8rem, 2vw, 1.8rem);
+	z-index: 6;
+	background: linear-gradient(90deg, rgba(9, 1, 5, 0.72), rgba(255, 239, 176, 0.34), rgba(8, 1, 4, 0.12));
+	box-shadow: 0 0 22px rgba(0, 0, 0, 0.55);
+}
+
+.about-page-turn__shadow {
+	position: absolute;
+	inset: 0;
+	z-index: 7;
+	pointer-events: none;
+	background: linear-gradient(90deg, transparent 36%, rgba(0, 0, 0, 0.62) 49%, transparent 62%);
+	mix-blend-mode: multiply;
+	transform: translateZ(1px);
+}
+
+/* ===== My Role section ===== */
+.myrole {
+	position: relative;
+	display: grid;
+	place-items: center;
+	overflow: hidden;
+	width: 100%;
+	height: 100%;
+	background: radial-gradient(circle at 76% 22%, rgba(167, 139, 250, 0.22), transparent 28%), radial-gradient(circle at 20% 82%, rgba(34, 211, 238, 0.12), transparent 30%), linear-gradient(135deg, #070713 0%, #111329 52%, #171022 100%);
+	color: #fff;
+}
+
+.myrole__grid {
+	position: absolute;
+	inset: 0;
+	background-image: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+	background-size: 54px 54px;
+	mask-image: linear-gradient(135deg, transparent 8%, #000 50%, transparent 94%);
+	opacity: 0.65;
+}
+
+.myrole__orb {
+	position: absolute;
+	border-radius: 999px;
+	filter: blur(2px);
+	pointer-events: none;
+}
+
+.myrole__orb--one {
+	width: min(32vw, 28rem);
+	height: min(32vw, 28rem);
+	right: -8vw;
+	top: -12vw;
+	border: 1px solid rgba(196, 181, 253, 0.4);
+	box-shadow: 0 0 90px rgba(167, 139, 250, 0.18), inset 0 0 50px rgba(34, 211, 238, 0.08);
+}
+
+.myrole__orb--two {
+	width: min(18vw, 13rem);
+	height: min(18vw, 13rem);
+	left: 7vw;
+	bottom: -8vw;
+	background: radial-gradient(circle, rgba(34, 211, 238, 0.22), transparent 68%);
+}
+
+.myrole__layout {
+	position: relative;
+	z-index: 1;
+	display: grid;
+	grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.35fr);
+	align-items: center;
+	gap: clamp(2rem, 7vw, 8rem);
+	width: min(90vw, 90rem);
+}
+
+.myrole__eyebrow,
+.myrole__number {
+	margin: 0;
+	font-size: 0.7rem;
+	font-weight: 800;
+	letter-spacing: 0.28em;
+	text-transform: uppercase;
+	color: #c4b5fd;
+}
+
+.myrole__title {
+	margin: 0.5rem 0 1.1rem;
+	font-family: Anton, "Bebas Neue", Impact, sans-serif;
+	font-size: clamp(4rem, 10vw, 10rem);
+	line-height: 0.84;
+	letter-spacing: -0.02em;
+	text-transform: uppercase;
+	color: transparent;
+	background: linear-gradient(135deg, #fff 10%, #c4b5fd 46%, #38bdf8 100%);
+	-webkit-background-clip: text;
+	background-clip: text;
+}
+
+.myrole__lead {
+	max-width: 28rem;
+	margin: 0;
+	font-size: clamp(0.95rem, 1.25vw, 1.2rem);
+	line-height: 1.7;
+	color: rgba(226, 232, 240, 0.78);
+}
+
+.myrole__cards {
+	display: grid;
+	gap: 0.8rem;
+}
+
+.myrole__card {
+	position: relative;
+	padding: clamp(1rem, 2vw, 1.5rem);
+	border: 1px solid rgba(196, 181, 253, 0.2);
+	border-radius: 1.1rem;
+	background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.035));
+	box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+	backdrop-filter: blur(12px);
+}
+
+.myrole__card h3 {
+	margin: 0.6rem 0 0.35rem;
+	font-size: clamp(1.05rem, 1.6vw, 1.5rem);
+	color: #fff;
+}
+
+.myrole__card p {
+	max-width: 34rem;
+	margin: 0;
+	font-size: clamp(0.8rem, 1vw, 0.95rem);
+	line-height: 1.55;
+	color: rgba(226, 232, 240, 0.68);
+}
+
+@media (max-width: 800px) {
+	.myrole__layout {
+		grid-template-columns: 1fr;
+		gap: 1.5rem;
+		width: min(88vw, 38rem);
+	}
+	.myrole__title {
+		font-size: clamp(3.5rem, 18vw, 6rem);
+	}
+	.myrole__cards {
+		grid-template-columns: 1fr;
+		max-height: 48vh;
+		overflow: auto;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.about-tear__half,
+	.about-tear__seam,
+	.myrole-layer {
+		transition: none !important;
+	}
+}
+
 .aboutme {
 	position: relative;
 	overflow: hidden;

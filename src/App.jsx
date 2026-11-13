@@ -60,7 +60,7 @@ import {
 
 import DitherVeil from "./components/DitherVeil"
 
-import NikePreloader from "./components/NikePreloader"
+import ComicPreloader from "./components/ComicPreloader"
 import "./App.css"
 import preloaderImage1 from "./assets/image1_porfolio.jpg"
 import preloaderImage2 from "./assets/image2_porfolio.jpg"
@@ -386,6 +386,44 @@ function AboutMeSection({ active }) {
   )
 }
 
+function MyRoleSection({ active }) {
+  const ease = [0.16, 1, 0.3, 1]
+  const reveal = (delay, from) => ({
+    initial: { opacity: 0, ...from },
+    animate: active ? { opacity: 1, x: 0, y: 0, scale: 1 } : { opacity: 0, ...from },
+    transition: { duration: 0.9, ease, delay: active ? delay : 0 },
+  })
+  const roles = [
+    { label: "01", title: "Build the interface", text: "Turn complex ideas into clear, responsive products people enjoy using." },
+    { label: "02", title: "Connect the system", text: "Shape the frontend, APIs, data, and automation into one reliable flow." },
+    { label: "03", title: "Make it intelligent", text: "Use AI agents and practical LLM integrations to solve real problems." },
+  ]
+
+  return (
+    <section className="myrole">
+      <div className="myrole__grid" aria-hidden="true" />
+      <div className="myrole__orb myrole__orb--one" aria-hidden="true" />
+      <div className="myrole__orb myrole__orb--two" aria-hidden="true" />
+      <div className="myrole__layout">
+        <motion.div className="myrole__intro" {...reveal(0.1, { y: 48 })}>
+          <p className="myrole__eyebrow">THE NEXT CHAPTER</p>
+          <h2 className="myrole__title">My Role</h2>
+          <p className="myrole__lead">I work across design, code, and intelligence — turning a rough idea into a useful product that can ship.</p>
+        </motion.div>
+        <div className="myrole__cards">
+          {roles.map((role, index) => (
+            <motion.article key={role.label} className="myrole__card" {...reveal(0.22 + index * 0.12, { y: 38 })}>
+              <span className="myrole__number">{role.label}</span>
+              <h3>{role.title}</h3>
+              <p>{role.text}</p>
+            </motion.article>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // Web tech stack: icons lie like real tiles resting in the four corners (x / y = % of screen, r = tilt in degrees, s = size)
 const TECH_ICONS = [
   // bottom-left pile
@@ -527,10 +565,11 @@ function PortfolioScrollScene({ image, projects }) {
     if (!g || !doneRef.current) return 0
     return clamp01((v - g.top) / (g.h - g.vh))
   })
-  // original animation progress (About -> Tech Stack -> curtain -> showcase intro)
+  // scene progress: About -> My Role tear -> Tech Stack -> curtain -> showcase intro
   const p = useTransform(pAll, (v) => clamp01(v * SCENE_STRETCH))
+  const roleT = useTransform(p, [0.02, 0.22], [0, 1])
   // project wheel sliding up over the showcase intro, after a short pause on the intro
-  const q = useTransform(pAll, [0.72, 1], [0, 1])
+  const q = useTransform(pAll, [0.86, 1], [0, 1])
 
   const stageY = useTransform(entry, (v) => `${(1 - v) * 100}%`)
   const stageVisibility = useTransform(entry, (v) => (v <= 0.001 ? "hidden" : "visible"))
@@ -582,8 +621,9 @@ function PortfolioScrollScene({ image, projects }) {
     }
   }, [aboutDone])
 
-  // 1) circle mask grows from the top-left corner and reveals the Tech Stack  (0.02 -> 0.24)
-  const circleT = useTransform(p, [0.02, 0.24], [0, 1])
+  // 1) About tears open to reveal My Role (0.02 -> 0.22)
+  // 2) circle mask grows from the top-left corner and reveals Tech Stack (0.28 -> 0.50)
+  const circleT = useTransform(p, [0.28, 0.5], [0, 1])
   const techClip = useTransform(circleT, (t) => {
     const r = t * Math.hypot(window.innerWidth, window.innerHeight) * 1.05
     return `circle(${r}px at 0px 0px)`
@@ -592,12 +632,12 @@ function PortfolioScrollScene({ image, projects }) {
   const ringSize = useTransform(circleT, (t) => `${t * Math.hypot(window.innerWidth, window.innerHeight) * 2.1}px`)
   const ringOpacity = useTransform(circleT, [0, 0.05, 0.9, 1], [0, 1, 1, 0])
 
-  // 2) curtain closes over the Tech Stack (0.46 -> 0.60), stays shut, then 3) opens on Projects (0.66 -> 0.86)
-  const KEYS = [0.46, 0.6, 0.66, 0.86]
+  // 3) curtain closes over Tech Stack (0.66 -> 0.80), then opens on Projects (0.84 -> 1)
+  const KEYS = [0.66, 0.8, 0.84, 1]
   const leftX = useTransform(p, KEYS, ["-100%", "0%", "0%", "-100%"])
   const rightX = useTransform(p, KEYS, ["100%", "0%", "0%", "100%"])
-  const labelOpacity = useTransform(p, [0.54, 0.6, 0.64, 0.7], [0, 1, 1, 0])
-  const rodOpacity = useTransform(p, [0.44, 0.5, 0.82, 0.88], [0, 1, 1, 0])
+  const labelOpacity = useTransform(p, [0.74, 0.8, 0.84, 0.9], [0, 1, 1, 0])
+  const rodOpacity = useTransform(p, [0.64, 0.7, 0.96, 1], [0, 1, 1, 0])
 
   // fabric: folds gather while the curtain is open and spread out when it is shut, and drift as it moves
   const pleatNum = useTransform(p, KEYS, [2.4, 7, 7, 2.4])
@@ -606,14 +646,14 @@ function PortfolioScrollScene({ image, projects }) {
   const shiftR = useTransform(p, KEYS, ["6vw", "0vw", "0vw", "6vw"])
 
   // wavy edge: ripples hardest while moving, settles to a soft wave when shut
-  const amp = useTransform(p, [0, 0.46, 0.52, 0.6, 0.66, 0.72, 0.86, 1], [0, 0, 5, 1.2, 1.2, 5, 0, 0])
+  const amp = useTransform(p, [0, 0.66, 0.72, 0.8, 0.84, 0.9, 1], [0, 0, 5, 1.2, 1.2, 5, 0])
   const clipL = useTransform([amp, p], ([a, v]) => curtainClip(a, v * 60, "left"))
   const clipR = useTransform([amp, p], ([a, v]) => curtainClip(a, v * 60, "right"))
 
   // projects sit hidden under the closed curtain and are shown only once it is fully shut
-  const projectsOpacity = useTransform(p, [0.61, 0.62], [0, 1])
-  const projectsVisibility = useTransform(p, (v) => (v < 0.61 ? "hidden" : "visible"))
-  const projectsScale = useTransform(p, [0.66, 0.86], [0.94, 1])
+  const projectsOpacity = useTransform(p, [0.81, 0.84], [0, 1])
+  const projectsVisibility = useTransform(p, (v) => (v < 0.81 ? "hidden" : "visible"))
+  const projectsScale = useTransform(p, [0.84, 1], [0.94, 1])
   const markScale = useTransform(q, [0, 1], [1, 1.25])
   const wheelY = useTransform(q, (v) => `${(1 - v) * 100}%`)
   const wheelVisibility = useTransform(q, (v) => (v <= 0.001 ? "hidden" : "visible"))
@@ -622,7 +662,7 @@ function PortfolioScrollScene({ image, projects }) {
     <div ref={ref} className="curtain-wrap">
       <motion.div className="curtain-stage" style={{ y: stageY, visibility: stageVisibility }}>
         <div className="stage-about">
-          <AboutSlider image={image} onDoneChange={setAboutDone} />
+          <AboutSlider image={image} onDoneChange={setAboutDone} tearProgress={roleT} />
         </div>
 
         {/* Tech Stack: revealed by a circle growing from the top-left corner */}
@@ -725,11 +765,19 @@ function PortfolioScrollScene({ image, projects }) {
   )
 }
 
-// Name section -> (auto, no scrolling) horizontal slide -> About me
-function AboutSlider({ image, onDoneChange }) {
+// Name section -> automatic About slide -> scroll-driven crumple -> My Role
+function AboutSlider({ image, onDoneChange, tearProgress }) {
   const ref = useRef(null)
   const inView = useInView(ref, { amount: 0.6 })
   const [slid, setSlid] = useState(false)
+  // Active scrolling turns the completed About page right-to-left like a book page.
+  // Use a short trigger window so one deliberate scroll starts the complete turn.
+  const roleOpacity = useTransform(tearProgress, [0, 0.03, 0.16, 1], [0, 1, 1, 1])
+  const baseOpacity = useTransform(tearProgress, [0.01, 0.1], [1, 0])
+  const pageOpacity = useTransform(tearProgress, [0, 0.01, 0.16, 0.3], [0, 1, 1, 0])
+  const pageRotateY = useTransform(tearProgress, [0, 0.01, 0.16, 1], ["0deg", "0deg", "-180deg", "-180deg"])
+  const pageRotateZ = useTransform(tearProgress, [0, 0.08, 0.2, 1], ["0deg", "-0.4deg", "-2deg", "-2deg"])
+  const pageShadow = useTransform(tearProgress, [0.01, 0.08, 0.2, 0.3], [0, 1, 0.45, 0])
 
   useEffect(() => {
     if (!inView) {
@@ -754,11 +802,23 @@ function AboutSlider({ image, onDoneChange }) {
     <div ref={ref} className="about-slider">
       <motion.div
         className="about-slider__track"
+        style={{ opacity: baseOpacity }}
         animate={{ x: slid ? "-50%" : "0%" }}
         transition={{ duration: 1.1, ease: [0.77, 0, 0.175, 1] }}
       >
         <AboutNameSection image={image} />
         <AboutMeSection active={slid} />
+      </motion.div>
+
+      <motion.div className="myrole-layer" style={{ opacity: roleOpacity }}>
+        <MyRoleSection active />
+      </motion.div>
+
+      <motion.div className="about-page-turn" style={{ opacity: pageOpacity, visibility: slid ? "visible" : "hidden" }} aria-hidden="true">
+        <motion.div className="about-page-turn__sheet" style={{ "--page-rotate-y": pageRotateY, "--page-rotate-z": pageRotateZ }}>
+          <AboutMeSection active={slid} />
+          <motion.div className="about-page-turn__shadow" style={{ opacity: pageShadow }} />
+        </motion.div>
       </motion.div>
     </div>
   )
@@ -947,7 +1007,7 @@ function App() {
 
   return (
     <>
-      <NikePreloader
+      <ComicPreloader
         images={[preloaderImage1, preloaderImage2, preloaderImage3, preloaderImage4]}
         onReveal={() => setHeroIn(true)}
       />
