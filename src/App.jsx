@@ -4,7 +4,6 @@ import {
   BriefcaseBusiness,
   Contact,
   FolderKanban,
-  Globe,
   Home,
   LayoutDashboard,
   MessageSquare,
@@ -24,7 +23,7 @@ import {
   Sparkles as StarSparkle,
   X,
 } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion" // <--- ADD THIS LINE
+import { motion, AnimatePresence, useInView, useScroll, useTransform } from "framer-motion"
 import {
   SiCss,
   SiDocker,
@@ -51,17 +50,22 @@ import {
   SiTailwindcss,
   SiTypescript,
   SiFacebook,
+  SiFigma,
+  SiLaravel,
+  SiSupabase,
+  SiVercel,
+  SiVite,
+  SiWordpress,
 } from "react-icons/si"
 
-import TextType from "./TextType"
-import GlareHover from "./GlareHover"
-import MagicBento from "./MagicBento"
-import LogoLoop from "./LogoLoop"
-import AboutInfiniteMenu from "./components/AboutInfiniteMenu"
-import EducationSkillsProcess from "./components/EducationSkillsProcess"
-import TiltedCard from "./components/TiltedCard/TiltedCard"
+import DitherVeil from "./components/DitherVeil"
+
+import NikePreloader from "./components/NikePreloader"
 import "./App.css"
-import Particles from "./components/Particles/Particles"
+import preloaderImage1 from "./assets/image1_porfolio.jpg"
+import preloaderImage2 from "./assets/image2_porfolio.jpg"
+import preloaderImage3 from "./assets/image3_porfolio.jpg"
+import preloaderImage4 from "./assets/image4_porfolio.jpg"
 import profilePic from "./assets/profilepicc.png"
 
 const projectMediaMap = import.meta.glob(
@@ -187,14 +191,9 @@ const resumeSkillGroups = [
   },
 ]
 
-const heroName = "Jeffrey C. Bonina"
-const heroNameParts = heroName.split(" ")
-
-const heroStats = [
-  { value: "3+", label: "YEARS EXPERIENCE" },
-  { value: "40+", label: "PROJECTS COMPLETED" },
-  { value: "20+", label: "HAPPY CLIENTS" },
-]
+// Everything below the hero (logo strip, services orbit, about menu, sidebar + tab pages, dock).
+// Set to true to bring it all back; nothing was deleted.
+const SHOW_REST_OF_PAGE = false
 
 function buildMenuImage(title, subtitle, accent, highlight) {
   const svg = `
@@ -258,12 +257,534 @@ const serviceMenuItems = [
 ]
 
 
+// Fallback backgrounds for projects that have no image / video
+const PROJECT_GRADIENTS = [
+  "linear-gradient(135deg, #3b0764 0%, #0f172a 100%)",
+  "linear-gradient(135deg, #7c2d12 0%, #1c1917 100%)",
+  "linear-gradient(135deg, #064e3b 0%, #0f172a 100%)",
+  "linear-gradient(135deg, #1e3a8a 0%, #020617 100%)",
+  "linear-gradient(135deg, #831843 0%, #1e1b4b 100%)",
+  "linear-gradient(135deg, #713f12 0%, #0c0a09 100%)",
+]
+
+function GallerySection({
+  title = "PORTFOLIO",
+  labelLeft = "JEFFREY",
+  labelRight = "BONINA",
+  side = "PORTFOLIO GALLERY",
+  image,
+}) {
+  return (
+    <section className="gallery-section">
+      <h2 className="gallery-title">{title}</h2>
+
+      <div className="gallery-labels">
+        <span>{labelLeft}</span>
+        <span>{labelRight}</span>
+      </div>
+
+      <div className="gallery-frame">
+        <div className="gallery-panel gallery-panel--top">
+          {image ? <img src={image} alt="" /> : null}
+        </div>
+        <div className="gallery-panel gallery-panel--bottom">
+          <span className="gallery-panel__mark">&lt;/&gt;</span>
+        </div>
+        <span className="gallery-side">{side}</span>
+      </div>
+    </section>
+  )
+}
+
+function AboutNameSection({ first = "JEFFREY", last = "BONINA", image }) {
+  // replays every time the section scrolls into view
+  const view = { once: false, amount: 0.45 }
+  const ease = [0.16, 1, 0.3, 1]
+
+  return (
+    <motion.section className="aboutname" initial="hidden" whileInView="show" viewport={view}>
+      <motion.h2
+        className="aboutname__first"
+        variants={{ hidden: { opacity: 0, y: 90 }, show: { opacity: 1, y: 0 } }}
+        transition={{ duration: 1.1, ease, delay: 0.1 }}
+      >
+        {first}
+      </motion.h2>
+
+      <div className="aboutname__reflection" aria-hidden="true">
+        <motion.span
+          className="aboutname__shadow"
+          variants={{ hidden: { opacity: 0, x: -120 }, show: { opacity: 1, x: 0 } }}
+          transition={{ duration: 1.3, ease, delay: 0.4 }}
+        >
+          {last}
+        </motion.span>
+      </div>
+
+      {image ? (
+        <motion.img
+          src={image}
+          alt={`${first} ${last}`}
+          className="aboutname__photo"
+          style={{ x: "-50%" }}
+          variants={{ hidden: { opacity: 0, y: 140, scale: 0.9 }, show: { opacity: 1, y: 0, scale: 1 } }}
+          transition={{ duration: 1.2, ease, delay: 0.25 }}
+        />
+      ) : null}
+    </motion.section>
+  )
+}
+
+// Time from the section becoming visible to the automatic horizontal slide.
+// The name pop-in takes ~1.7s, so 3700ms leaves it fully shown for about 2 seconds.
+// The scene is 700vh tall: the first 2/3 of the scroll runs the About -> Tech Stack -> curtain animation
+// (its timings are written for the old 500vh scene, so they are stretched by this factor),
+// the last 1/3 slides the project wheel up over the white "Project Showcase" intro.
+const SCENE_STRETCH = 1.5
+const ABOUT_SLIDE_DELAY_MS = 800
+// slide (1.1s) + About Me pop-in (~2s) after the slide starts
+const ABOUT_DONE_DELAY_MS = 1600
+const ABOUT_ME_TEXT =
+  "I'm a CS student who fell in love with building things people actually use. I specialize in frontend-focused full-stack development — turning ideas into scalable, user-friendly web apps using React, TypeScript, Node.js, and Tailwind CSS. I've shipped real client projects including a completed content management system (CMS) and an e-commerce platform. I also build and implement AI agents powered by LLMs, integrating OpenAI and Gemini APIs to create intelligent, context-aware web experiences that solve real problems."
+
+const ABOUT_INFO = [
+  { label: "Role", value: "Full-Stack Developer | LLM & AI Agent Builder" },
+  { label: "Stack", value: "React · TypeScript · Node.js · Tailwind CSS" },
+  { label: "Based in", value: "Philippines" },
+  { label: "Availability", value: "Available worldwide" },
+  { label: "Email", value: "jeffreybonina05@gmail.com" },
+]
+
+function AboutMeSection({ active }) {
+  const ease = [0.16, 1, 0.3, 1]
+  const pop = (delay, from) => ({
+    initial: { opacity: 0, ...from },
+    animate: active ? { opacity: 1, x: 0, y: 0, scale: 1 } : { opacity: 0, ...from },
+    transition: { duration: 1, ease, delay: active ? delay : 0 },
+  })
+
+  return (
+    <section className="aboutme">
+      <div className="aboutme__bgword" aria-hidden="true">ABOUT ME</div>
+
+      <div className="aboutme__layout">
+        {/* RIGHT: information */}
+        <motion.div className="aboutme__info" {...pop(0.9, { y: 40 })}>
+          <h3 className="aboutme__name">Jeffrey C. Bonina</h3>
+          <p className="aboutme__text">{ABOUT_ME_TEXT}</p>
+          <dl className="aboutme__facts">
+            {ABOUT_INFO.map((row) => (
+              <div key={row.label} className="aboutme__fact">
+                <dt>{row.label}</dt>
+                <dd>{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
+// Web tech stack: icons lie like real tiles resting in the four corners (x / y = % of screen, r = tilt in degrees, s = size)
+const TECH_ICONS = [
+  // bottom-left pile
+  { icon: SiReact, color: "#0EA5E9", name: "React", x: 5.5, y: 91, s: 1.15, r: -4 },
+  { icon: SiTypescript, color: "#3178C6", name: "TypeScript", x: 12, y: 93, s: 1, r: 7 },
+  { icon: SiJavascript, color: "#E6B800", name: "JavaScript", x: 18.5, y: 91.5, s: 1.05, r: -9 },
+  { icon: SiTailwindcss, color: "#06B6D4", name: "Tailwind CSS", x: 8.5, y: 79, s: 1.05, r: 11 },
+  { icon: SiHtml5, color: "#E34F26", name: "HTML5", x: 15, y: 80.5, s: 0.95, r: -6 },
+  { icon: SiExpress, color: "#333333", name: "Express", x: 11.5, y: 67.5, s: 0.9, r: 5 },
+  // bottom-right pile
+  { icon: SiGithub, color: "#181717", name: "GitHub", x: 94.5, y: 91, s: 1.15, r: 5 },
+  { icon: SiGit, color: "#F05032", name: "Git", x: 88, y: 93, s: 0.95, r: -8 },
+  { icon: SiFigma, color: "#F24E1E", name: "Figma", x: 81.5, y: 91.5, s: 1.05, r: 10 },
+  { icon: SiVercel, color: "#000000", name: "Vercel", x: 91.5, y: 79, s: 0.95, r: -12 },
+  { icon: SiWordpress, color: "#21759B", name: "WordPress", x: 85, y: 80.5, s: 1, r: 6 },
+  { icon: SiOpenai, color: "#10A37F", name: "OpenAI", x: 88.5, y: 67.5, s: 1, r: -5 },
+  // top-left corner
+  { icon: SiSupabase, color: "#3ECF8E", name: "Supabase", x: 5.5, y: 9, s: 1.1, r: 6 },
+  { icon: SiFirebase, color: "#F59E0B", name: "Firebase", x: 12, y: 7.5, s: 1, r: -7 },
+  { icon: SiPhp, color: "#777BB4", name: "PHP", x: 8.5, y: 20, s: 1, r: -10 },
+  // top-right corner
+  { icon: SiNextdotjs, color: "#111111", name: "Next.js", x: 94.5, y: 9, s: 1.1, r: -6 },
+  { icon: SiNodedotjs, color: "#5FA04E", name: "Node.js", x: 88, y: 7.5, s: 1.15, r: 8 },
+  { icon: SiCss, color: "#1572B6", name: "CSS3", x: 91.5, y: 20, s: 0.95, r: 11 },
+  { icon: SiVite, color: "#8B5CF6", name: "Vite", x: 81.5, y: 9.5, s: 0.95, r: -4 },
+  { icon: SiMongodb, color: "#47A248", name: "MongoDB", x: 18.5, y: 9, s: 0.95, r: 9 },
+  { icon: SiPython, color: "#3776AB", name: "Python", x: 5.5, y: 31, s: 1, r: -5 },
+  { icon: SiLaravel, color: "#FF2D20", name: "Laravel", x: 94.5, y: 31, s: 1, r: 7 },
+]
+
+function TechStackSection() {
+  const boxRef = useRef(null)
+  const [resetKey, setResetKey] = useState(0)
+
+  return (
+    <section ref={boxRef} className="techstack">
+      <div className="techstack__glow" aria-hidden="true" />
+
+      {/* giant shiny textmark split around the center veil: TECH [veil] STACK */}
+      <div className="techstack__bgword" aria-hidden="true">
+        <span>TECH</span>
+        <span>STACK</span>
+      </div>
+
+      {/* DitherVeil in the center: move the cursor over it to reveal the image in colour */}
+      <div className="techstack__veil">
+        <DitherVeil
+          src="https://images.unsplash.com/photo-1737071371043-761e02b1ef95?q=80&w=1400&auto=format&fit=crop"
+          fit="cover"
+          pattern="floyd"
+          pixelSize={2}
+          inkColor="#ffffff"
+          paperColor="#c98a00"
+          revealRadius={220}
+          softness={0.6}
+          linger={1}
+        />
+      </div>
+
+      {TECH_ICONS.map((item, i) => {
+        const Icon = item.icon
+
+        return (
+          <div
+            key={`${resetKey}-${item.name}`}
+            className="techstack__item"
+            style={{
+              left: `${item.x}%`,
+              top: `${item.y}%`,
+              "--s": item.s,
+              "--r": `${item.r}deg`,
+            }}
+          >
+            <motion.div
+              className="techstack__tile"
+              drag
+              dragConstraints={boxRef}
+              dragElastic={0.12}
+              dragTransition={{ power: 0.25, timeConstant: 220 }}
+              whileHover={{ scale: 1.12 }}
+              whileDrag={{ scale: 1.25, zIndex: 10 }}
+              aria-label={item.name}
+            >
+              <Icon className="techstack__icon" style={{ color: item.color }} aria-hidden="true" />
+              <span className="techstack__name">{item.name}</span>
+            </motion.div>
+          </div>
+        )
+      })}
+
+      <p className="techstack__hint">Drag the icons around</p>
+      <button type="button" className="techstack__reset" onClick={() => setResetKey((k) => k + 1)}>
+        Reset
+      </button>
+    </section>
+  )
+}
+
+// Wavy leading edge of a curtain half, as a clip-path polygon (percent of the panel width)
+function curtainClip(amp, phase, side) {
+  const N = 26
+  const pts = []
+  for (let i = 0; i <= N; i += 1) {
+    const y = i / N
+    const w = amp * (Math.sin(y * Math.PI * 5 + phase) + 0.45 * Math.sin(y * Math.PI * 11 - phase * 1.3))
+    const x = side === "left" ? 100 + w : w
+    pts.push(`${x.toFixed(2)}% ${(y * 100).toFixed(2)}%`)
+  }
+  return side === "left"
+    ? `polygon(0% 0%, ${pts.join(", ")}, 0% 100%)`
+    : `polygon(100% 0%, ${pts.join(", ")}, 100% 100%)`
+}
+
+// One pinned (fixed) scene: About stays on screen -> curtain closes over it -> curtain opens on the white Projects section
+function PortfolioScrollScene({ image, projects }) {
+  const ref = useRef(null)
+  const [aboutDone, setAboutDone] = useState(false)
+  const [activeProject] = useState(0)
+  const current = projects[activeProject] ?? projects[0]
+
+  const doneRef = useRef(false)
+  const { scrollY: pageY } = useScroll()
+
+  // Progress is computed from the spacer's live position on every scroll (no cached measurements)
+  const clamp01 = (n) => Math.min(1, Math.max(0, n))
+  const geom = () => {
+    const el = ref.current
+    if (!el) return null
+    return { top: el.getBoundingClientRect().top + window.scrollY, h: el.offsetHeight, vh: window.innerHeight }
+  }
+  // entry: the scene slides up over the gallery while the spacer approaches the top of the screen
+  const entry = useTransform(pageY, (v) => {
+    const g = geom()
+    return g ? clamp01((v - (g.top - g.vh)) / g.vh) : 0
+  })
+  // main: runs while the scene is pinned; stays at 0 until the About intro (name + slide) is done
+  const pAll = useTransform(pageY, (v) => {
+    const g = geom()
+    if (!g || !doneRef.current) return 0
+    return clamp01((v - g.top) / (g.h - g.vh))
+  })
+  // original animation progress (About -> Tech Stack -> curtain -> showcase intro)
+  const p = useTransform(pAll, (v) => clamp01(v * SCENE_STRETCH))
+  // project wheel sliding up over the showcase intro, after a short pause on the intro
+  const q = useTransform(pAll, [0.72, 1], [0, 1])
+
+  const stageY = useTransform(entry, (v) => `${(1 - v) * 100}%`)
+  const stageVisibility = useTransform(entry, (v) => (v <= 0.001 ? "hidden" : "visible"))
+
+  useEffect(() => {
+    doneRef.current = aboutDone
+    pageY.set(window.scrollY + 0.001)
+    pageY.set(window.scrollY)
+  }, [aboutDone, pageY])
+
+  // Hold the page at the pinned About scene until the name -> About Me slide has finished
+  useEffect(() => {
+    if (aboutDone) return undefined
+    const el = ref.current
+    if (!el) return undefined
+
+    const pinTop = () => el.getBoundingClientRect().top + window.scrollY
+    const atPin = () => window.scrollY >= pinTop() - 2
+    const clamp = () => {
+      const top = pinTop()
+      if (window.scrollY > top) window.scrollTo(0, top)
+    }
+    const onWheel = (e) => {
+      if (e.deltaY > 0 && atPin()) e.preventDefault()
+    }
+    let touchY = 0
+    const onTouchStart = (e) => {
+      touchY = e.touches[0].clientY
+    }
+    const onTouchMove = (e) => {
+      if (touchY - e.touches[0].clientY > 0 && atPin()) e.preventDefault()
+    }
+    const onKey = (e) => {
+      if (atPin() && ["ArrowDown", "PageDown", "End", " ", "Spacebar"].includes(e.key)) e.preventDefault()
+    }
+
+    clamp()
+    window.addEventListener("wheel", onWheel, { passive: false })
+    window.addEventListener("touchstart", onTouchStart, { passive: true })
+    window.addEventListener("touchmove", onTouchMove, { passive: false })
+    window.addEventListener("keydown", onKey)
+    window.addEventListener("scroll", clamp, { passive: true })
+    return () => {
+      window.removeEventListener("wheel", onWheel)
+      window.removeEventListener("touchstart", onTouchStart)
+      window.removeEventListener("touchmove", onTouchMove)
+      window.removeEventListener("keydown", onKey)
+      window.removeEventListener("scroll", clamp)
+    }
+  }, [aboutDone])
+
+  // 1) circle mask grows from the top-left corner and reveals the Tech Stack  (0.02 -> 0.24)
+  const circleT = useTransform(p, [0.02, 0.24], [0, 1])
+  const techClip = useTransform(circleT, (t) => {
+    const r = t * Math.hypot(window.innerWidth, window.innerHeight) * 1.05
+    return `circle(${r}px at 0px 0px)`
+  })
+  const techVisibility = useTransform(circleT, (t) => (t <= 0.001 ? "hidden" : "visible"))
+  const ringSize = useTransform(circleT, (t) => `${t * Math.hypot(window.innerWidth, window.innerHeight) * 2.1}px`)
+  const ringOpacity = useTransform(circleT, [0, 0.05, 0.9, 1], [0, 1, 1, 0])
+
+  // 2) curtain closes over the Tech Stack (0.46 -> 0.60), stays shut, then 3) opens on Projects (0.66 -> 0.86)
+  const KEYS = [0.46, 0.6, 0.66, 0.86]
+  const leftX = useTransform(p, KEYS, ["-100%", "0%", "0%", "-100%"])
+  const rightX = useTransform(p, KEYS, ["100%", "0%", "0%", "100%"])
+  const labelOpacity = useTransform(p, [0.54, 0.6, 0.64, 0.7], [0, 1, 1, 0])
+  const rodOpacity = useTransform(p, [0.44, 0.5, 0.82, 0.88], [0, 1, 1, 0])
+
+  // fabric: folds gather while the curtain is open and spread out when it is shut, and drift as it moves
+  const pleatNum = useTransform(p, KEYS, [2.4, 7, 7, 2.4])
+  const pleat = useTransform(pleatNum, (n) => `${n}vw`)
+  const shiftL = useTransform(p, KEYS, ["-6vw", "0vw", "0vw", "-6vw"])
+  const shiftR = useTransform(p, KEYS, ["6vw", "0vw", "0vw", "6vw"])
+
+  // wavy edge: ripples hardest while moving, settles to a soft wave when shut
+  const amp = useTransform(p, [0, 0.46, 0.52, 0.6, 0.66, 0.72, 0.86, 1], [0, 0, 5, 1.2, 1.2, 5, 0, 0])
+  const clipL = useTransform([amp, p], ([a, v]) => curtainClip(a, v * 60, "left"))
+  const clipR = useTransform([amp, p], ([a, v]) => curtainClip(a, v * 60, "right"))
+
+  // projects sit hidden under the closed curtain and are shown only once it is fully shut
+  const projectsOpacity = useTransform(p, [0.61, 0.62], [0, 1])
+  const projectsVisibility = useTransform(p, (v) => (v < 0.61 ? "hidden" : "visible"))
+  const projectsScale = useTransform(p, [0.66, 0.86], [0.94, 1])
+  const markScale = useTransform(q, [0, 1], [1, 1.25])
+  const wheelY = useTransform(q, (v) => `${(1 - v) * 100}%`)
+  const wheelVisibility = useTransform(q, (v) => (v <= 0.001 ? "hidden" : "visible"))
+
+  return (
+    <div ref={ref} className="curtain-wrap">
+      <motion.div className="curtain-stage" style={{ y: stageY, visibility: stageVisibility }}>
+        <div className="stage-about">
+          <AboutSlider image={image} onDoneChange={setAboutDone} />
+        </div>
+
+        {/* Tech Stack: revealed by a circle growing from the top-left corner */}
+        <motion.div className="techstack-layer" style={{ clipPath: techClip, visibility: techVisibility }}>
+          <TechStackSection />
+        </motion.div>
+        <motion.div
+          className="techstack-edge"
+          style={{ width: ringSize, height: ringSize, opacity: ringOpacity }}
+          aria-hidden="true"
+        />
+
+        <motion.div className="curtain curtain--left" style={{ x: leftX }} aria-hidden="true">
+          <motion.div className="curtain__cloth" style={{ clipPath: clipL, "--pleat": pleat, "--shift": shiftL }}>
+            <motion.span className="curtain__label curtain__label--left" style={{ opacity: labelOpacity }}>
+              SELECTED
+            </motion.span>
+          </motion.div>
+        </motion.div>
+        <motion.div className="curtain curtain--right" style={{ x: rightX }} aria-hidden="true">
+          <motion.div className="curtain__cloth" style={{ clipPath: clipR, "--pleat": pleat, "--shift": shiftR }}>
+            <motion.span className="curtain__label curtain__label--right" style={{ opacity: labelOpacity }}>
+              WORK
+            </motion.span>
+          </motion.div>
+        </motion.div>
+        <motion.div className="curtain-rod" style={{ opacity: rodOpacity }} aria-hidden="true" />
+
+        {/* 1) white "Project Showcase" intro with a centered textmark */}
+        <motion.section className="showcase-intro" style={{ opacity: projectsOpacity, visibility: projectsVisibility, scale: projectsScale }}>
+          <motion.h2 className="showcase-intro__mark" style={{ scale: markScale }}>
+            <span>PROJECT</span>
+            <span>SHOWCASE</span>
+          </motion.h2>
+          <p className="showcase-intro__hint">Scroll</p>
+        </motion.section>
+
+        {/* 2) project wheel: slides up over the intro while scrolling */}
+        <motion.section className="projects-white" style={{ y: wheelY, visibility: wheelVisibility }}>
+          <div className="projects-white__bgword" aria-hidden="true">PROJECTS</div>
+
+          <header className="projects-white__head">
+            <p className="projects-white__eyebrow">Selected Work</p>
+            <h2 className="projects-white__title">Projects</h2>
+          </header>
+
+          {/* background follows the active project */}
+          <div className="projects-white__bg" aria-hidden="true">
+            <AnimatePresence initial={false}>
+              <motion.div
+                key={current.id}
+                className="projects-bg__layer"
+                style={{ background: PROJECT_GRADIENTS[activeProject % PROJECT_GRADIENTS.length] }}
+                initial={{ opacity: 0, scale: 1.08 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+              >
+                {current.media ? (
+                  current.media.isVideo ? (
+                    <video src={current.media.src} muted loop autoPlay playsInline />
+                  ) : (
+                    <img src={current.media.src} alt="" />
+                  )
+                ) : null}
+              </motion.div>
+            </AnimatePresence>
+            <div className="projects-bg__shade" />
+          </div>
+
+          <div className="projects-stage">
+            <div className="projects-stage__detail">
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={current.id}
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -16 }}
+                  transition={{ duration: 0.35, ease: "easeOut" }}
+                >
+                  <span className="projects-detail__meta">
+                    {String(activeProject + 1).padStart(2, "0")} / {String(projects.length).padStart(2, "0")} · {current.year} · {current.status}
+                  </span>
+                  <h3 className="projects-detail__title">{current.title}</h3>
+                  <p className="projects-detail__desc">{current.description}</p>
+                  <div className="projects-detail__stack">
+                    {current.stack.map((StackIcon, i) => (
+                      <span key={`${current.id}-s-${i}`} className="projects-detail__chip">
+                        <StackIcon aria-hidden="true" />
+                      </span>
+                    ))}
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+        </motion.section>
+      </motion.div>
+    </div>
+  )
+}
+
+// Name section -> (auto, no scrolling) horizontal slide -> About me
+function AboutSlider({ image, onDoneChange }) {
+  const ref = useRef(null)
+  const inView = useInView(ref, { amount: 0.6 })
+  const [slid, setSlid] = useState(false)
+
+  useEffect(() => {
+    if (!inView) {
+      setSlid(false)
+      return undefined
+    }
+    const timer = setTimeout(() => setSlid(true), ABOUT_SLIDE_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [inView])
+
+  // "done" = the slide to About Me finished and its content popped in
+  useEffect(() => {
+    if (!slid) {
+      onDoneChange?.(false)
+      return undefined
+    }
+    const timer = setTimeout(() => onDoneChange?.(true), ABOUT_DONE_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [slid, onDoneChange])
+
+  return (
+    <div ref={ref} className="about-slider">
+      <motion.div
+        className="about-slider__track"
+        animate={{ x: slid ? "-50%" : "0%" }}
+        transition={{ duration: 1.1, ease: [0.77, 0, 0.175, 1] }}
+      >
+        <AboutNameSection image={image} />
+        <AboutMeSection active={slid} />
+      </motion.div>
+    </div>
+  )
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState("Home")
+  const [heroIn, setHeroIn] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [projectQuery, setProjectQuery] = useState("")
   const [projectSort, setProjectSort] = useState("newest")
   const mainScrollRef = useRef(null)
+  // Scroll-driven transition: home zooms in -> small circle grows -> gallery section is revealed.
+  // The effect runs over the first 200vh of scroll (the spacer below is 300vh tall).
+  const { scrollY: pageScrollY } = useScroll()
+  const effectLength = () => (typeof window === "undefined" ? 1 : window.innerHeight * 2)
+  const heroProgress = useTransform(pageScrollY, (v) => Math.min(1, Math.max(0, v / effectLength())))
+  // The hero/gallery layer stays put; the About scene slides over it. Hide it once fully covered.
+  const heroLayerVisibility = useTransform(pageScrollY, (v) =>
+    typeof window !== "undefined" && v >= window.innerHeight * 2.97 ? "hidden" : "visible",
+  )
+  const heroZoom = useTransform(heroProgress, [0, 0.6], [1, 1.6])
+  const circleScale = useTransform(heroProgress, [0.12, 1], [0, 1])
+  const circleOpacity = useTransform(heroProgress, [0.12, 0.16, 0.9, 1], [0, 1, 1, 0])
+  const circleClip = useTransform(circleScale, (v) => `circle(${v * 75}vmax at 50% 50%)`)
+  const galleryVisibility = useTransform(circleScale, (v) => (v <= 0.001 ? "hidden" : "visible"))
   const [orbitalServiceTab, setOrbitalServiceTab] = useState(null)
   const [activeServiceTab, setActiveServiceTab] = useState("frontend")
   const activeService = servicesData.find((s) => s.id === activeServiceTab)
@@ -426,106 +947,69 @@ function App() {
 
   return (
     <>
-            <section className="hero-shell relative isolate min-h-[100svh] w-full overflow-hidden border border-yellow-400/30 bg-[#080808] px-5 py-6 shadow-[0_0_0_1px_rgba(250,204,21,0.08),0_24px_80px_rgba(0,0,0,0.45)] sm:px-8 sm:py-8 lg:px-10 lg:py-10">
+      <NikePreloader
+        images={[preloaderImage1, preloaderImage2, preloaderImage3, preloaderImage4]}
+        onReveal={() => setHeroIn(true)}
+      />
+            <div className="relative h-[300vh]">
+            <motion.div style={{ visibility: heroLayerVisibility }} className="fixed inset-0 z-10 h-[100svh] w-full overflow-hidden bg-[#0f0204]">
+            <motion.div style={{ scale: heroZoom }} className="h-full w-full">
+            <section className="hero-shell relative isolate h-[100svh] w-full overflow-hidden border border-rose-300/20 bg-[#0f0204] px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
               <div className="absolute inset-0 overflow-hidden">
-                <Particles
-                  className="absolute inset-0 pointer-events-auto"
-                  particleColors={["#ffffff"]}
-                  particleCount={200}
-                  particleSpread={10}
-                  speed={0.1}
-                  particleBaseSize={100}
-                  moveParticlesOnHover={true}
-                  alphaParticles={false}
-                  disableRotation={false}
-                  pixelRatio={1}
-                />
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,8,8,0.38),rgba(8,8,8,0.12),rgba(8,8,8,0.38))]" />
+                <motion.div
+                  className="absolute inset-0"
+                  initial={{ scale: 1.6 }}
+                  animate={{ scale: heroIn ? 1 : 1.6 }}
+                  transition={{ duration: 2.2, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <div className="hero-bg" aria-hidden="true" />
+                  <div className="hero-glow" aria-hidden="true" />
+                </motion.div>
               </div>
-              <div className="pointer-events-none absolute inset-0 border border-white/5" />
-              <div className="hero-bg-word pointer-events-none absolute inset-x-0 top-[25%] -translate-y-1/2 select-none text-center text-[clamp(4.2rem,15vw,15rem)] font-black uppercase leading-none tracking-[-0.08em] word-spacing:40px">
-                <span className="block text-yellow-300">PORTFOLIO</span>
-            
-              </div>
-
-              <div className="relative z-10 flex min-h-[calc(100svh-12rem)] flex-col">
-                <div className="flex items-start justify-between gap-4 text-[10px] font-semibold uppercase tracking-[0.34em] sm:text-[11px]">
-                  <div className="space-y-1">
-                    <p className="text-yellow-300">WEB DESIGNER</p>
-                    <p className="text-zinc-500">DIGITAL CREATOR</p>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-right text-zinc-500">
-                    <span>AVAILABLE FOR FREELANCE</span>
-                    <StarSparkle className="h-3.5 w-3.5 text-yellow-300" aria-hidden="true" />
-                  </div>
+              {/* BACKGROUND TEXTMARK: big </> glyph + sliding cursive lorem text */}
+              <motion.div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 select-none"
+                initial={{ opacity: 0, scale: 0.7 }}
+                animate={heroIn ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.7 }}
+                transition={{ duration: 1.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="hero-codemark">&lt;/&gt;</span>
                 </div>
 
-                <div className="relative mt-8 grid flex-1 items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(300px,0.85fr)] lg:gap-16">
-                  <div className="relative z-20 max-w-2xl mt-14 lg:mt-20">
-                    <p className="text-[clamp(1.4rem,2.2vw,2.1rem)] leading-none text-white" style={{ fontFamily: "cursive" }}>
-                      Hello, I&apos;m
-                    </p>
-
-                    <h1 className="max-w-xl text-[clamp(2.6rem,6.2vw,5.1rem)] font-black uppercase leading-[0.86] tracking-[-0.08em] text-white">
-                      <span className="block">{heroNameParts.slice(0, 2).join(" ")}</span>
-                      <span className="block">{heroNameParts.slice(2).join(" ") || heroName}</span>
-                    </h1>
-
-                    <p className="mt-4 text-[clamp(0.75rem,0.95vw,0.95rem)] font-semibold uppercase tracking-[0.24em] text-yellow-400">
-                      WEB DESIGNER & UI/UX CREATOR
-                    </p>
-
-                    <p className="mt-4 max-w-[30rem] text-xs leading-6 text-zinc-400 sm:text-sm">
-                      I design stylish, user-focused web experiences that balance bold visuals with clear
-                      structure, combining creative direction and strategy to build memorable digital products.
-                    </p>
-
-                    <div className="mt-10 flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-zinc-500">
-                      <Globe className="h-4 w-4 text-zinc-400" aria-hidden="true" />
-                      <span>AVAILABLE WORLDWIDE</span>
-                    </div>
-                  </div>
-
-                  <div className="relative z-20 flex flex-col justify-end gap-6 pb-8 lg:min-h-[34rem]">
-                    <div className="mt-auto space-y-4 lg:ml-auto lg:max-w-[20rem]">
-                      <div className="flex items-center gap-4 rounded-[1.5rem] border border-white/8 bg-white/[0.03] px-4 py-3 backdrop-blur-sm">
-                        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-yellow-300/40 bg-yellow-300/10 text-yellow-300">
-                          <Sparkles className="h-6 w-6" aria-hidden="true" />
-                        </div>
-                        <p className="max-w-[12rem] text-xs leading-5 text-zinc-300">
-                          Turning ideas into powerful digital experiences.
-                        </p>
-                      </div>
-
-                      <div className="space-y-0 border-t border-zinc-700/60">
-                        {heroStats.map((stat, index) => (
-                          <div key={stat.label} className={"flex items-start gap-4 py-3 " + (index > 0 ? "border-t border-zinc-700/60" : "") }>
-                            <div className="min-w-[4.5rem] text-[clamp(1.6rem,3vw,2.6rem)] font-black leading-none text-yellow-300">
-                              {stat.value}
-                            </div>
-                            <div className="pt-1 text-[10px] font-semibold uppercase tracking-[0.32em] text-zinc-400">
-                              {stat.label}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pointer-events-none absolute left-1/2 top-[55%] z-30 w-[min(84vw,36rem)] -translate-x-1/2 -translate-y-1/2 lg:w-[min(40vw,38rem)]">
-                    <div className="relative mx-auto aspect-[4/5] max-w-[38rem]">
-                      <img
-                        src={profilePic}
-                        alt="Portrait of Jeffrey C. Bonina"
-                        className="absolute inset-0 z-10 h-full w-full object-contain drop-shadow-[0_24px_45px_rgba(0,0,0,0.55)]"
-                      />
-                    </div>
+                <div className="hero-marquee">
+                  <div className="hero-marquee__track">
+                    {[0, 1].map((copy) => (
+                      <span key={copy} className="hero-marquee__text">
+                        Lorem ipsum dolor sit amet ✦ consectetur adipiscing elit ✦ sed do eiusmod tempor ✦{" "}
+                      </span>
+                    ))}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </section>
+            </motion.div>
 
+            {/* Next section, revealed through a circle that grows while scrolling */}
+            <motion.div style={{ clipPath: circleClip, visibility: galleryVisibility }} className="absolute inset-0 z-20 will-change-[clip-path]">
+              <GallerySection image={profilePic} />
+            </motion.div>
+
+            {/* Growing ring edge of the circle */}
+            <motion.div
+              aria-hidden="true"
+              style={{ x: "-50%", y: "-50%", scale: circleScale, opacity: circleOpacity }}
+              className="pointer-events-none absolute left-1/2 top-1/2 z-30 h-[150vmax] w-[150vmax] rounded-full border-[18px] border-yellow-400/40 will-change-transform"
+            />
+            </motion.div>
+            </div>
+
+            {/* About me: slides in under the gallery once the transition is done */}
+            <PortfolioScrollScene image={profilePic} projects={projects} />
+
+            {SHOW_REST_OF_PAGE ? (
+            <>
             <section className="relative w-full border-t border-yellow-400/20 bg-[#080808] px-5 py-3 sm:px-8 lg:px-10">
               <div className="mx-auto w-full max-w-[1800px]">
   
@@ -737,9 +1221,6 @@ function App() {
                 </div>
               </div>
             </section>
-            <div>
-              <EducationSkillsProcess />
-            </div>
             <AboutInfiniteMenu />
       <div className={
         "relative min-h-screen w-full overflow-x-hidden transition-colors duration-500 " + theme.shell
@@ -1080,14 +1561,7 @@ function App() {
           ) : activeTab === "About" ? (
             <AboutInfiniteMenu />
           ) : activeTab === "Resume" ? (
-            <>
-              <header className="mb-5">
-                <h1 className="text-lg font-semibold tracking-tight text-zinc-100">
-                  {activeTab}
-                </h1>
-                <p className="mt-1 text-sm text-zinc-400">Coming soon.</p>
-              </header>
-            </>
+            <EducationSkillsProcess />
           ) : activeTab === "Services" ? (
             <>
               {/* --- HEADER & OVERVIEW DESCRIPTION --- */}
@@ -1208,7 +1682,6 @@ function App() {
                   </motion.div>
                 </AnimatePresence>
               </div>
-
             </>
           ) : (
             <>
@@ -1243,6 +1716,8 @@ function App() {
         })}
       </div>
     </div>
+            </>
+            ) : null}
     </>
   )
 }
