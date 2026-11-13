@@ -1,7 +1,4 @@
-/* ===== ComicPreloader =====
-   Optional: drop Bangers (Google Fonts, free) into /public/fonts/bangers.woff2
-   (or .ttf) for the authentic comic lettering. Without it the stack falls back
-   to Impact / Anton, which still looks right. */
+
 @font-face {
 	font-family: "Comic Display";
 	src:
