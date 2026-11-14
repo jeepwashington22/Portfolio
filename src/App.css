@@ -541,7 +541,7 @@
 	width: 100%;
 	height: 100%;
 	overflow: hidden;
-	background: #f1f0ee;
+	background: var(--surface-white);
 	color: #111;
 	padding: clamp(1rem, 3vw, 2.5rem) clamp(1rem, 4vw, 3.5rem);
 	display: flex;
@@ -1570,7 +1570,7 @@
 	display: grid;
 	place-items: center;
 	overflow: hidden;
-	background: #fff;
+	background: var(--surface-white);
 	will-change: transform;
 }
 .showcase-intro__mark {
@@ -1773,7 +1773,7 @@
 	overflow: hidden;
 	border: 1px solid #e7e5e4;
 	border-radius: 14px;
-	background: #fafaf9;
+	background: var(--surface-white);
 	transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 .pcard:hover {
@@ -1785,7 +1785,7 @@
 	min-height: 0;
 	display: grid;
 	place-items: center;
-	background: #f0efed;
+	background: var(--surface-white);
 }
 .pcard__media img,
 .pcard__media video {
@@ -1848,7 +1848,7 @@
 	position: absolute;
 	inset: 0;
 	overflow: hidden;
-	background: linear-gradient(135deg, #fffdf8 0%, #f6f1e6 55%, #ece4d2 100%);
+	background: var(--surface-white);
 	color: #111;
 	--tile: clamp(54px, 8.6vmin, 100px);
 	--veil-w: clamp(260px, 34vw, 700px);
@@ -1941,7 +1941,7 @@
 	display: grid;
 	place-items: center;
 	border-radius: 24%;
-	background: linear-gradient(145deg, #ffffff 0%, #f4efe3 100%);
+	background: var(--surface-white);
 	border: 1px solid rgba(0, 0, 0, 0.08);
 	/* resting on the floor: edge highlight, thickness, contact shadow + soft cast shadow */
 	box-shadow:

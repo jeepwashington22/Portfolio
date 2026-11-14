@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { Fragment, useEffect, useMemo, useRef, useState } from "react"
 import {
   BookOpen,
   BriefcaseBusiness,
@@ -23,7 +23,7 @@ import {
   Sparkles as StarSparkle,
   X,
 } from "lucide-react"
-import { motion, AnimatePresence, useInView, useScroll, useTransform } from "framer-motion"
+import { motion, AnimatePresence, useInView, useScroll, useSpring, useTransform } from "framer-motion"
 import {
   SiCss,
   SiDocker,
@@ -344,50 +344,207 @@ const SCENE_STRETCH = 1.5
 const ABOUT_SLIDE_DELAY_MS = 800
 // slide (1.1s) + About Me pop-in (~2s) after the slide starts
 const ABOUT_DONE_DELAY_MS = 1600
-const ABOUT_ME_TEXT =
-  "I'm a CS student who fell in love with building things people actually use. I specialize in frontend-focused full-stack development — turning ideas into scalable, user-friendly web apps using React, TypeScript, Node.js, and Tailwind CSS. I've shipped real client projects including a completed content management system (CMS) and an e-commerce platform. I also build and implement AI agents powered by LLMs, integrating OpenAI and Gemini APIs to create intelligent, context-aware web experiences that solve real problems."
+// The About text is split into two separate descriptions: top-right and bottom-left
+const ABOUT_QUOTES = {
+  topRight: {
+    label: "WHO I AM",
+    text:
+      "I'm a CS student who fell in love with building things people actually use. I specialize in frontend-focused full-stack development — turning ideas into scalable, user-friendly web apps using React, TypeScript, Node.js, and Tailwind CSS.",
+  },
+  bottomLeft: {
+    label: "WHAT I BUILD",
+    text:
+      "I've shipped real client projects including a completed content management system (CMS) and an e-commerce platform. I also build and implement AI agents powered by LLMs, integrating OpenAI and Gemini APIs to create intelligent, context-aware web experiences that solve real problems.",
+  },
+}
+const ABOUT_MARQUEE = ["FRONTEND", "FULL-STACK", "AI AGENTS", "REACT", "TYPESCRIPT", "LLM", "UI / UX"]
 
-const ABOUT_INFO = [
-  { label: "Role", value: "Full-Stack Developer | LLM & AI Agent Builder" },
-  { label: "Stack", value: "React · TypeScript · Node.js · Tailwind CSS" },
-  { label: "Based in", value: "Philippines" },
-  { label: "Availability", value: "Available worldwide" },
-  { label: "Email", value: "jeffreybonina05@gmail.com" },
-]
+// Poster-style About Me: centered glowing red circle, light serif + heavy red sans title, gliding text
+const ABOUT_ME_STYLES = `
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap');
+
+.abm{position:relative;flex:0 0 50%;width:100%;height:100%;min-width:0;overflow:hidden;color:#f6eeee;
+  background:radial-gradient(110% 90% at 50% 44%,#2b0407 0%,#140103 50%,#070001 100%);
+  font-family:'Montserrat',system-ui,sans-serif}
+.abm::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:4;
+  background:radial-gradient(90% 90% at 50% 50%,transparent 55%,rgba(0,0,0,.55) 100%)}
+
+/* centered circle */
+.abm__circleWrap{position:absolute;left:50%;top:44%;width:min(66vh,44vw);aspect-ratio:1;transform:translate(-50%,-50%);z-index:1}
+.abm__circle{width:100%;height:100%;border-radius:50%;position:relative;
+  background:radial-gradient(circle at 50% 64%,#ff6a45 0%,#ff2312 34%,#d90a00 66%,#8d0000 100%);
+  box-shadow:0 0 140px 24px rgba(255,26,0,.32),inset 0 -40px 110px rgba(110,0,0,.55);
+  animation:abm-float 9s ease-in-out infinite}
+.abm__circle::after{content:"";position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 50% 70%,rgba(255,190,140,.38),transparent 46%);mix-blend-mode:screen}
+@keyframes abm-float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-1.6vh) scale(1.018)}}
+
+/* centered title under the circle */
+.abm__headline{position:absolute;left:50%;bottom:4vh;transform:translateX(-50%);z-index:3;margin:0;text-align:center;line-height:.95;white-space:nowrap}
+.abm__serif{display:block;font-family:'Playfair Display',Georgia,serif;font-weight:400;
+  font-size:clamp(1.5rem,3.6vw,3.8rem);letter-spacing:-.01em;color:#fff}
+.abm__big{display:block;font-weight:900;font-size:clamp(2.6rem,7vw,7.6rem);letter-spacing:-.035em;color:#ff1f12;
+  text-shadow:0 0 38px rgba(255,31,18,.45),0 6px 30px rgba(120,0,0,.6);margin-top:.02em}
+
+/* name, top-left */
+.abm__id{position:absolute;left:clamp(1.2rem,4vw,4.5rem);top:6vh;z-index:3}
+.abm__eyebrow{display:flex;align-items:center;gap:.9rem;font-size:.68rem;font-weight:800;letter-spacing:.34em;color:#ff4a36;margin:0 0 .8rem}
+.abm__eyebrow::before{content:"";width:2.6rem;height:2px;background:linear-gradient(90deg,#ff1f12,transparent)}
+.abm__name{font-family:'Playfair Display',Georgia,serif;font-weight:500;font-style:italic;
+  font-size:clamp(1.3rem,2.4vw,2.4rem);margin:0;color:#fff;line-height:1.05}
+
+/* the two separate descriptions */
+.abm__quote{position:absolute;z-index:3;width:clamp(15rem,27vw,26rem)}
+.abm__quote--tr{right:clamp(1.2rem,4vw,4.5rem);top:6vh}
+.abm__quote--bl{left:clamp(1.2rem,4vw,4.5rem);bottom:9vh}
+.abm__mark{display:block;font-family:'Playfair Display',Georgia,serif;font-size:clamp(3rem,5vw,5rem);line-height:.7;color:#ff1f12;
+  text-shadow:0 0 24px rgba(255,31,18,.5);margin-bottom:.35rem;height:.5em}
+.abm__label{margin:0 0 .7rem;font-size:.62rem;font-weight:800;letter-spacing:.3em;color:#ff4a36}
+.abm__text{margin:0;font-size:clamp(.74rem,.45vw + .48rem,.98rem);line-height:1.7;color:rgba(246,238,238,.84);font-weight:500}
+.abm__quote--tr{padding-left:1.1rem;border-left:2px solid rgba(255,70,50,.5)}
+.abm__quote--bl{padding-left:1.1rem;border-left:2px solid rgba(255,70,50,.5)}
+.abm__mask{display:inline-block;overflow:hidden;vertical-align:top;padding-bottom:.12em;margin-bottom:-.12em}
+.abm__word{display:inline-block;will-change:transform}
+
+/* endlessly gliding ticker */
+.abm__marquee{position:absolute;left:0;right:0;top:44%;z-index:0;overflow:hidden;white-space:nowrap;pointer-events:none;transform:translateY(-50%);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+.abm__marqueeTrack{display:inline-flex;animation:abm-marquee 36s linear infinite}
+.abm__marqueeTrack span{font-weight:900;font-size:clamp(3rem,9vw,9rem);letter-spacing:.04em;padding-right:2.4rem;
+  color:transparent;-webkit-text-stroke:1px rgba(255,70,50,.16)}
+@keyframes abm-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+@media (max-width:900px){
+  .abm{display:flex;flex-direction:column;align-items:stretch;padding:3vh 1.3rem 2vh;gap:1.1rem;overflow-y:auto}
+  .abm__circleWrap,.abm__headline,.abm__id,.abm__quote{position:relative;left:auto;right:auto;top:auto;bottom:auto;transform:none}
+  .abm__circleWrap{width:min(34vh,62vw);margin:0 auto;flex:0 0 auto}
+  .abm__headline{order:2;white-space:normal}
+  .abm__id{order:3}
+  .abm__quote{width:auto;order:4}
+  .abm__quote--bl{order:5}
+  .abm__marquee{display:none}
+}
+@media (prefers-reduced-motion:reduce){.abm__circle,.abm__marqueeTrack{animation:none}}
+`
+
+// text that rises word by word out of a mask
+function GlideWords({ text, active, start = 0 }) {
+  const ease = [0.16, 1, 0.3, 1]
+  return (
+    <p className="abm__text">
+      {text.split(" ").map((word, i) => (
+        <Fragment key={`${word}-${i}`}>
+          <span className="abm__mask">
+            <motion.span
+              className="abm__word"
+              initial={{ y: "120%", opacity: 0 }}
+              animate={active ? { y: "0%", opacity: 1 } : { y: "120%", opacity: 0 }}
+              transition={{ duration: 0.95, ease, delay: active ? start + i * 0.026 : 0 }}
+            >
+              {word}
+            </motion.span>
+          </span>{" "}
+        </Fragment>
+      ))}
+    </p>
+  )
+}
 
 function AboutMeSection({ active }) {
   const ease = [0.16, 1, 0.3, 1]
-  const pop = (delay, from) => ({
-    initial: { opacity: 0, ...from },
-    animate: active ? { opacity: 1, x: 0, y: 0, scale: 1 } : { opacity: 0, ...from },
-    transition: { duration: 1, ease, delay: active ? delay : 0 },
+  // everything glides in with a soft blur-to-sharp, and replays whenever the page is shown again
+  const glide = (from, delay, duration = 1.25) => ({
+    initial: { opacity: 0, filter: "blur(12px)", ...from },
+    animate: active
+      ? { opacity: 1, filter: "blur(0px)", x: 0, y: 0, scale: 1 }
+      : { opacity: 0, filter: "blur(12px)", ...from },
+    transition: { duration, ease, delay: active ? delay : 0 },
   })
 
   return (
-    <section className="aboutme">
-      <div className="aboutme__bgword" aria-hidden="true">ABOUT ME</div>
+    <section className="abm">
+      <style>{ABOUT_ME_STYLES}</style>
 
-      <div className="aboutme__layout">
-        {/* RIGHT: information */}
-        <motion.div className="aboutme__info" {...pop(0.9, { y: 40 })}>
-          <h3 className="aboutme__name">Jeffrey C. Bonina</h3>
-          <p className="aboutme__text">{ABOUT_ME_TEXT}</p>
-          <dl className="aboutme__facts">
-            {ABOUT_INFO.map((row) => (
-              <div key={row.label} className="aboutme__fact">
-                <dt>{row.label}</dt>
-                <dd>{row.value}</dd>
-              </div>
-            ))}
-          </dl>
+      {/* ticker behind the circle */}
+      <motion.div className="abm__marquee" aria-hidden="true" {...glide({ y: 0 }, 1.2, 1.4)}>
+        <div className="abm__marqueeTrack">
+          {[...ABOUT_MARQUEE, ...ABOUT_MARQUEE, ...ABOUT_MARQUEE, ...ABOUT_MARQUEE].map((item, i) => (
+            <span key={`${item}-${i}`}>{item} ✦</span>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* the circle, centered on the page */}
+      <div className="abm__circleWrap" aria-hidden="true">
+        <motion.div style={{ width: "100%", height: "100%" }} {...glide({ scale: 0.55 }, 0.05, 1.8)}>
+          <div className="abm__circle" />
         </motion.div>
       </div>
+
+      {/* top-left: who */}
+      <div className="abm__id">
+        <motion.p className="abm__eyebrow" {...glide({ x: -60 }, 0.7, 1)}>
+          PORTFOLIO · 2026
+        </motion.p>
+        <motion.h3 className="abm__name" {...glide({ y: 30 }, 0.8)}>
+          Jeffrey C. Bonina
+        </motion.h3>
+      </div>
+
+      {/* top-right description */}
+      <div className="abm__quote abm__quote--tr">
+        <motion.div {...glide({ x: 80 }, 0.9)}>
+          <span className="abm__mark" aria-hidden="true">“</span>
+          <p className="abm__label">{ABOUT_QUOTES.topRight.label}</p>
+        </motion.div>
+        <GlideWords text={ABOUT_QUOTES.topRight.text} active={active} start={1.1} />
+      </div>
+
+      {/* bottom-left description */}
+      <div className="abm__quote abm__quote--bl">
+        <motion.div {...glide({ x: -80 }, 1.3)}>
+          <span className="abm__mark" aria-hidden="true">“</span>
+          <p className="abm__label">{ABOUT_QUOTES.bottomLeft.label}</p>
+        </motion.div>
+        <GlideWords text={ABOUT_QUOTES.bottomLeft.text} active={active} start={1.6} />
+      </div>
+
+      {/* centered title */}
+      <h2 className="abm__headline">
+        <motion.span className="abm__serif" {...glide({ x: -140 }, 0.35)}>
+          Get to know
+        </motion.span>
+        <motion.span className="abm__big" {...glide({ x: 160 }, 0.5)}>
+          ABOUT ME
+        </motion.span>
+      </h2>
     </section>
   )
 }
 
+// Light theme for My Role (matches the Tech Stack page). Scoped to .myrole and written to beat App.css.
+const MYROLE_LIGHT_STYLES = `
+.myrole{color:#14161c;background-color:#F4F6F8!important;
+  background-image:radial-gradient(ellipse 60% 60% at 10% 90%,rgba(247,181,0,.10),transparent 70%)!important}
+.myrole__grid{background-image:linear-gradient(rgba(20,22,28,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(20,22,28,.07) 1px,transparent 1px)!important;
+  background-size:56px 56px!important;opacity:1!important;filter:none!important;
+  -webkit-mask-image:radial-gradient(70% 70% at 50% 50%,#000 30%,transparent 100%);mask-image:radial-gradient(70% 70% at 50% 50%,#000 30%,transparent 100%)}
+.myrole__orb{background:radial-gradient(circle,rgba(139,92,246,.22),transparent 68%)!important;filter:blur(36px)!important;mix-blend-mode:normal!important;opacity:1!important}
+.myrole__eyebrow{color:#7c3aed!important}
+.myrole__title{color:#0b0c10!important;text-shadow:none!important;-webkit-text-fill-color:#0b0c10!important;background:none!important}
+.myrole__lead{color:#4b5160!important}
+.myrole__card{background:#fff!important;border:1px solid rgba(20,22,28,.09)!important;
+  box-shadow:0 18px 40px -22px rgba(20,22,28,.28),0 2px 6px rgba(20,22,28,.05)!important;backdrop-filter:none!important}
+.myrole__card h3{color:#0b0c10!important}
+.myrole__card p{color:#5a6070!important}
+.myrole__number{color:#7c3aed!important;-webkit-text-stroke:0!important;opacity:1!important}
+`
+
+const MYROLE_SURFACE = { backgroundColor: "#F4F6F8" } // light surface (same as --surface-white)
+
 function MyRoleSection({ active }) {
   const ease = [0.16, 1, 0.3, 1]
+  const surface = MYROLE_SURFACE
   const reveal = (delay, from) => ({
     initial: { opacity: 0, ...from },
     animate: active ? { opacity: 1, x: 0, y: 0, scale: 1 } : { opacity: 0, ...from },
@@ -400,7 +557,8 @@ function MyRoleSection({ active }) {
   ]
 
   return (
-    <section className="myrole">
+    <section className="myrole" style={surface}>
+      <style>{MYROLE_LIGHT_STYLES}</style>
       <div className="myrole__grid" aria-hidden="true" />
       <div className="myrole__orb myrole__orb--one" aria-hidden="true" />
       <div className="myrole__orb myrole__orb--two" aria-hidden="true" />
@@ -537,6 +695,11 @@ function curtainClip(amp, phase, side) {
     : `polygon(100% 0%, ${pts.join(", ")}, 100% 100%)`
 }
 
+// Project Showcase intro: dark red, same surface as the Home section
+const SHOWCASE_DARK_STYLES = `
+.showcase-intro{background:#0f0204!important}
+`
+
 // One pinned (fixed) scene: About stays on screen -> curtain closes over it -> curtain opens on the white Projects section
 function PortfolioScrollScene({ image, projects }) {
   const ref = useRef(null)
@@ -658,6 +821,84 @@ function PortfolioScrollScene({ image, projects }) {
   const wheelY = useTransform(q, (v) => `${(1 - v) * 100}%`)
   const wheelVisibility = useTransform(q, (v) => (v <= 0.001 ? "hidden" : "visible"))
 
+  // Once the curtain starts opening on the Project Showcase intro, the page takes over by itself:
+  // it glides straight on, with no pause, so the projects slide up. No scrolling needed.
+  // Scrolling is locked while it runs, and it re-arms when the visitor scrolls back up.
+  useEffect(() => {
+    const st = { armed: true, busy: false, timer: 0, safety: 0, raf: 0 }
+    const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+    const finish = () => {
+      st.busy = false
+      clearTimeout(st.safety)
+    }
+    const run = (from, to, dur, done) => {
+      const t0 = performance.now()
+      const tick = (now) => {
+        const t = Math.min(1, (now - t0) / dur)
+        window.scrollTo({ top: from + (to - from) * ease(t), behavior: "instant" })
+        if (t < 1) {
+          st.raf = requestAnimationFrame(tick)
+        } else {
+          st.raf = 0
+          done()
+        }
+      }
+      st.raf = requestAnimationFrame(tick)
+    }
+    const start = () => {
+      const g = geom()
+      if (!g) {
+        finish()
+        return
+      }
+      const endY = g.top + g.h - g.vh // projects fully slid up
+      const from = window.scrollY
+      st.safety = window.setTimeout(finish, 9000)
+      // one continuous glide, no pause: the intro opens and the projects slide up right away
+      if (endY - from < 4) finish()
+      else run(from, endY, 3000, finish)
+    }
+    const onProgress = (v) => {
+      if (v < 0.5) {
+        if (st.timer || st.raf) {
+          clearTimeout(st.timer)
+          cancelAnimationFrame(st.raf)
+          st.timer = 0
+          st.raf = 0
+          finish()
+        }
+        st.armed = true
+        return
+      }
+      // 0.56 = curtain has just closed and begins to open on the intro
+      if (v >= 0.56 && st.armed && !st.busy) {
+        st.armed = false
+        st.busy = true
+        start()
+      }
+    }
+    const unsub = pAll.on("change", onProgress)
+    const block = (e) => {
+      if (st.busy) e.preventDefault()
+    }
+    const blockKey = (e) => {
+      if (st.busy && ["ArrowDown", "ArrowUp", "PageDown", "PageUp", "End", "Home", " ", "Spacebar"].includes(e.key)) e.preventDefault()
+    }
+    window.addEventListener("wheel", block, { passive: false })
+    window.addEventListener("touchmove", block, { passive: false })
+    window.addEventListener("keydown", blockKey)
+    return () => {
+      unsub()
+      clearTimeout(st.timer)
+      clearTimeout(st.safety)
+      cancelAnimationFrame(st.raf)
+      window.removeEventListener("wheel", block)
+      window.removeEventListener("touchmove", block)
+      window.removeEventListener("keydown", blockKey)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pAll])
+
   return (
     <div ref={ref} className="curtain-wrap">
       <motion.div className="curtain-stage" style={{ y: stageY, visibility: stageVisibility }}>
@@ -693,11 +934,15 @@ function PortfolioScrollScene({ image, projects }) {
 
         {/* 1) white "Project Showcase" intro with a centered textmark */}
         <motion.section className="showcase-intro" style={{ opacity: projectsOpacity, visibility: projectsVisibility, scale: projectsScale }}>
+          <style>{SHOWCASE_DARK_STYLES}</style>
+          <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: -1, overflow: "hidden", pointerEvents: "none", background: "#0f0204" }}>
+            <div className="hero-bg" />
+            <div className="hero-glow" />
+          </div>
           <motion.h2 className="showcase-intro__mark" style={{ scale: markScale }}>
             <span>PROJECT</span>
             <span>SHOWCASE</span>
           </motion.h2>
-          <p className="showcase-intro__hint">Scroll</p>
         </motion.section>
 
         {/* 2) project wheel: slides up over the intro while scrolling */}
@@ -765,19 +1010,102 @@ function PortfolioScrollScene({ image, projects }) {
   )
 }
 
-// Name section -> automatic About slide -> scroll-driven crumple -> My Role
-function AboutSlider({ image, onDoneChange, tearProgress }) {
+
+// ---------- Torn paper transition ----------
+// Three jagged holes grow from the middle of the About page as you scroll:
+//   A = hole in the top paper, B = hole in the white paper core (the fibrous torn rim is the ring A-B),
+//   C = soft shadow cast on My Role just inside the rim.
+const TEAR_N = 90
+const TEAR_REACH = 130 // radius (in % of the screen) that surely covers every corner
+
+function seededRandom(seed) {
+  let s = seed
+  return () => {
+    s = (s * 16807) % 2147483647
+    return (s - 1) / 2147483646
+  }
+}
+
+const TEAR_SHAPE = (() => {
+  const rnd = seededRandom(11)
+  return Array.from({ length: TEAR_N }, (_, i) => {
+    const a = (i / TEAR_N) * Math.PI * 2
+    const lobes = 1 + 0.2 * Math.sin(a * 3 + 1.2) + 0.12 * Math.sin(a * 5 + 0.4)
+    const jag = 0.86 + rnd() * 0.3
+    const zig = i % 2 === 0 ? 1 : 0.9
+    return {
+      cos: Math.cos(a),
+      sin: Math.sin(a),
+      k: lobes * jag * zig,
+      delay: rnd(), // some edges rip sooner than others
+      rim: 1 + rnd() * 3.2, // thickness of the torn white rim (% of the screen)
+    }
+  })
+})()
+
+const TEAR_OUTER = "0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%"
+
+// Clip-path that keeps everything OUTSIDE the jagged hole. `inset` shrinks the hole's edge by (inset * rim) %.
+function tearClip(t, inset = 0) {
+  if (t <= 0.0005) return "none"
+  const smooth = (v) => v * v * (3 - 2 * v)
+  const ax = 0.3 + 0.7 * smooth(Math.min(1, t * 1.15)) // starts as a tall crack, then opens sideways
+  const pts = TEAR_SHAPE.map((p) => {
+    const u = Math.min(1, Math.max(0, (t - p.delay * 0.35) / 0.65))
+    const r = Math.max(0, smooth(u) * TEAR_REACH * p.k - inset * p.rim)
+    return `${(50 + p.cos * r * ax).toFixed(2)}% ${(50 + p.sin * r).toFixed(2)}%`
+  })
+  return `polygon(evenodd, ${TEAR_OUTER}, ${pts.join(", ")}, ${pts[0]}, 0% 0%)`
+}
+
+const PAPER_FIBER_TEXTURE =
+  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .4  0 0 0 0 .33  0 0 0 .22 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")"
+
+const TEAR_LAYER = { position: "absolute", inset: 0, pointerEvents: "none" }
+
+// Name section -> automatic About slide -> scroll-driven tear -> My Role
+function AboutSlider({ image, onDoneChange, tearProgress: rawTear }) {
+  // spring-smoothed scroll progress: the paper keeps tearing a moment after the wheel stops, never steps
+  const tearProgress = useSpring(rawTear, { stiffness: 80, damping: 26, mass: 0.6, restDelta: 0.0004 })
   const ref = useRef(null)
   const inView = useInView(ref, { amount: 0.6 })
   const [slid, setSlid] = useState(false)
-  // Active scrolling turns the completed About page right-to-left like a book page.
-  // Use a short trigger window so one deliberate scroll starts the complete turn.
-  const roleOpacity = useTransform(tearProgress, [0, 0.03, 0.16, 1], [0, 1, 1, 1])
-  const baseOpacity = useTransform(tearProgress, [0.01, 0.1], [1, 0])
-  const pageOpacity = useTransform(tearProgress, [0, 0.01, 0.16, 0.3], [0, 1, 1, 0])
-  const pageRotateY = useTransform(tearProgress, [0, 0.01, 0.16, 1], ["0deg", "0deg", "-180deg", "-180deg"])
-  const pageRotateZ = useTransform(tearProgress, [0, 0.08, 0.2, 1], ["0deg", "-0.4deg", "-2deg", "-2deg"])
-  const pageShadow = useTransform(tearProgress, [0.01, 0.08, 0.2, 0.3], [0, 1, 0.45, 0])
+  const [roleActive, setRoleActive] = useState(false)
+  const [paperBg, setPaperBg] = useState({ backgroundColor: "#0b0b0d" })
+
+  // The torn paper is the About page itself, so it copies whatever background the About page sits on
+  useEffect(() => {
+    let el = ref.current
+    while (el) {
+      const cs = getComputedStyle(el)
+      const color = cs.backgroundColor
+      const hasColor = color && color !== "rgba(0, 0, 0, 0)" && color !== "transparent"
+      if (hasColor || cs.backgroundImage !== "none") {
+        setPaperBg({
+          backgroundColor: color,
+          backgroundImage: cs.backgroundImage,
+          backgroundSize: cs.backgroundSize,
+          backgroundPosition: cs.backgroundPosition,
+        })
+        return
+      }
+      el = el.parentElement
+    }
+  }, [])
+
+  // hole in the top paper, hole in the white core, and the shadow hole
+  const clipPaper = useTransform(tearProgress, (t) => tearClip(t, 0))
+  const clipCore = useTransform(tearProgress, (t) => tearClip(t, 1))
+  const clipShade = useTransform(tearProgress, (t) => tearClip(t, 2.6))
+  const paperVisibility = useTransform(tearProgress, (t) => (t >= 0.999 ? "hidden" : "visible"))
+  const roleVisibility = useTransform(tearProgress, (t) => (t <= 0.001 ? "hidden" : "visible"))
+  // the paper lifts a touch while it rips
+  const paperLift = useTransform(tearProgress, [0, 0.5, 1], [1, 1.012, 1.03])
+
+  useEffect(() => {
+    const unsub = tearProgress.on("change", (t) => setRoleActive(t > 0.12))
+    return unsub
+  }, [tearProgress])
 
   useEffect(() => {
     if (!inView) {
@@ -800,24 +1128,50 @@ function AboutSlider({ image, onDoneChange, tearProgress }) {
 
   return (
     <div ref={ref} className="about-slider">
+      {/* 1. bottom: My Role, revealed through the hole */}
+      <motion.div style={{ ...TEAR_LAYER, zIndex: 1, visibility: roleVisibility, pointerEvents: "auto" }}>
+        <MyRoleSection active={roleActive} />
+      </motion.div>
+
+      {/* 2. shadow the rim casts onto My Role */}
+      <motion.div style={{ ...TEAR_LAYER, zIndex: 2, visibility: roleVisibility, filter: "blur(10px)" }} aria-hidden="true">
+        <motion.div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", clipPath: clipShade }} />
+      </motion.div>
+
+      {/* 3. white, fibrous core of the torn paper (only its rim is visible) */}
       <motion.div
-        className="about-slider__track"
-        style={{ opacity: baseOpacity }}
-        animate={{ x: slid ? "-50%" : "0%" }}
-        transition={{ duration: 1.1, ease: [0.77, 0, 0.175, 1] }}
+        style={{ ...TEAR_LAYER, zIndex: 3, visibility: roleVisibility, filter: "drop-shadow(0 3px 6px rgba(0,0,0,0.35))" }}
+        aria-hidden="true"
       >
-        <AboutNameSection image={image} />
-        <AboutMeSection active={slid} />
+        <motion.div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundColor: "#f4f0e6",
+            backgroundImage: `${PAPER_FIBER_TEXTURE}, linear-gradient(135deg, #fbf8f0, #e9e3d3)`,
+            clipPath: clipCore,
+          }}
+        />
       </motion.div>
 
-      <motion.div className="myrole-layer" style={{ opacity: roleOpacity }}>
-        <MyRoleSection active />
-      </motion.div>
-
-      <motion.div className="about-page-turn" style={{ opacity: pageOpacity, visibility: slid ? "visible" : "hidden" }} aria-hidden="true">
-        <motion.div className="about-page-turn__sheet" style={{ "--page-rotate-y": pageRotateY, "--page-rotate-z": pageRotateZ }}>
-          <AboutMeSection active={slid} />
-          <motion.div className="about-page-turn__shadow" style={{ opacity: pageShadow }} />
+      {/* 4. top: the About page, which rips open from the middle */}
+      <motion.div
+        style={{
+          ...TEAR_LAYER,
+          zIndex: 4,
+          visibility: paperVisibility,
+          filter: "drop-shadow(0 8px 18px rgba(0,0,0,0.5))",
+        }}
+      >
+        <motion.div style={{ position: "absolute", inset: 0, overflow: "hidden", ...paperBg, clipPath: clipPaper, scale: paperLift }}>
+          <motion.div
+            className="about-slider__track"
+            animate={{ x: slid ? "-50%" : "0%" }}
+            transition={{ duration: 1.1, ease: [0.77, 0, 0.175, 1] }}
+          >
+            <AboutNameSection image={image} />
+            <AboutMeSection active={slid} />
+          </motion.div>
         </motion.div>
       </motion.div>
     </div>

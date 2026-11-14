@@ -172,7 +172,7 @@
 	bottom: 0;
 	height: calc(var(--u) * 0.7);
 	z-index: 3;
-	background: linear-gradient(180deg, var(--cb-paper), #fff);
+	background: linear-gradient(180deg, var(--cb-paper), var(--surface-white));
 }
 /* the leaf darkens as it turns away from the light, brightens as it lands */
 .cb-fu__face::after {
@@ -229,7 +229,7 @@
 	inset: 0;
 	z-index: 20;
 	pointer-events: none;
-	background: #fff;
+	background: var(--surface-white);
 	opacity: 0;
 }
 .cb-flash.is-active {
@@ -352,7 +352,7 @@
 	position: absolute;
 	max-width: 78%;
 	padding: calc(var(--u) * 1.2) calc(var(--u) * 1.8);
-	background: #fff;
+	background: var(--surface-white);
 	color: var(--cb-ink);
 	border: var(--ink) solid var(--cb-ink);
 	border-radius: 48% / 58%;
@@ -368,7 +368,7 @@
 	bottom: calc(var(--u) * -1.1);
 	width: calc(var(--u) * 1.8);
 	height: calc(var(--u) * 1.8);
-	background: #fff;
+	background: var(--surface-white);
 	border-right: var(--ink) solid var(--cb-ink);
 	border-bottom: var(--ink) solid var(--cb-ink);
 	transform: rotate(48deg) skew(8deg, 8deg);
@@ -505,7 +505,7 @@
 }
 .cb-skip:hover,
 .cb-audio:hover {
-	background: #fff;
+	background: var(--surface-white);
 	color: var(--cb-ink);
 }
 .cb-skip:focus-visible,
